@@ -1,0 +1,48 @@
+[
+    ["composites_small_panel", {
+        "size": [333, 741],
+        "maskUrl": "./assets-mask-default/mask_vertical_soft_edge_500x500.png",
+        "maskSize": [333, 741]
+    }],
+    ["composites_large_panel", {
+        "size": [445, 1034],
+        "maskUrl": "./assets-mask-default/mask_vertical_soft_edge_500x500.png",
+        "maskSize": [445, 1034]
+    }],
+    ["stills_bobbleheads_faces_large", {
+        "size": [134, 220],
+        "copy": [{
+            "key": "stills_bobbleheads_faces",
+            "size": [84, 138]
+        }]
+    }],
+    ["stills_halfbody_large_faces_large", {
+        "size": [499, 400],
+        "copy": [{
+            "key": "stills_halfbody_large_faces",
+            "size": [312, 250]
+        }]
+    }],
+    ["stills_halfbody_small_faces_large", {
+        "size": [176, 134],
+        "copy": [{
+            "key": "stills_halfbody_small_faces",
+            "size": [110, 84]
+        }]
+    }],
+    ["stills_mini_faces_large", {
+        "size": [48, 48],
+        "maskUrl": "./assets-mask-default/mask_circle_300x300.png",
+        "copy": [{
+            "key": "stills_mini_faces",
+            "size": [30, 30]
+        }]
+    }],
+    ["stills_unitcards_faces_large", {
+        "size": [131, 435],
+        "copy": [{
+            "key": "stills_unitcards_faces",
+            "size": [82, 272]
+        }]
+    }]
+]

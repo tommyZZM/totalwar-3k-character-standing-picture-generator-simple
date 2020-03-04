@@ -1,0 +1,18 @@
+[
+    ["composites_small_panel", "ui/characters/{{type}}/{{gender}}/composites/faces/{{file_name}}/small_panel/angry/face.png"],
+    ["composites_small_panel", "ui/characters/{{type}}/{{gender}}/composites/faces/{{file_name}}/small_panel/happy/face.png"],
+    ["composites_small_panel", "ui/characters/{{type}}/{{gender}}/composites/faces/{{file_name}}/small_panel/normal/face.png"],
+    ["composites_large_panel", "ui/characters/{{type}}/{{gender}}/composites/faces/{{file_name}}/large_panel/angry/face.png"],
+    ["composites_large_panel", "ui/characters/{{type}}/{{gender}}/composites/faces/{{file_name}}/large_panel/happy/face.png"],
+    ["composites_large_panel", "ui/characters/{{type}}/{{gender}}/composites/faces/{{file_name}}/large_panel/normal/face.png"],
+    ["stills_bobbleheads_faces", "ui/characters/{{type}}/{{gender}}/stills/bobbleheads/faces/{{file_name}}.png"],
+    ["stills_bobbleheads_faces_large", "ui/characters/{{type}}/{{gender}}/stills/bobbleheads/faces/large/{{file_name}}.png"],
+    ["stills_halfbody_large_faces", "ui/characters/{{type}}/{{gender}}/stills/halfbody_large/faces/{{file_name}}.png"],
+    ["stills_halfbody_large_faces_large", "ui/characters/{{type}}/{{gender}}/stills/halfbody_large/faces/large/{{file_name}}.png"],
+    ["stills_halfbody_small_faces", "ui/characters/{{type}}/{{gender}}/stills/halfbody_small/faces/{{file_name}}.png"],
+    ["stills_halfbody_small_faces_large", "ui/characters/{{type}}/{{gender}}/stills/halfbody_small/faces/large/{{file_name}}.png"],
+    ["stills_mini_faces", "ui/characters/{{type}}/{{gender}}/stills/mini/faces/{{file_name}}.png"],
+    ["stills_mini_faces_large", "ui/characters/{{type}}/{{gender}}/stills/mini/faces/large/{{file_name}}.png"],
+    ["stills_unitcards_faces", "ui/characters/{{type}}/{{gender}}/stills/unitcards/faces/{{file_name}}.png"],
+    ["stills_unitcards_faces_large", "ui/characters/{{type}}/{{gender}}/stills/unitcards/faces/large/{{file_name}}.png"]
+]

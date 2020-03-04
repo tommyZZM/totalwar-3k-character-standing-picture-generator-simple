@@ -1,0 +1,4 @@
+.wspace.code-workspace
+test/fixtures
+**/*.psd
+node_modules/
