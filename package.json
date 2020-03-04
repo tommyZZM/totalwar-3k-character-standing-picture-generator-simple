@@ -5,8 +5,12 @@
   "main": "index.js",
   "scripts": {
     "gulp": "node -r esm ./node_modules/gulp/bin/gulp.js",
+    "build-before-push": "cross-env IS_BEFORE_PUSH=1 npm run gulp -- build && npm run gulp -- build:css && git add -A",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "pre-commit": [
+    "build-before-push"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
@@ -25,6 +29,7 @@
     "browserify": "^16.5.0",
     "chai": "^4.2.0",
     "chai-spies": "^1.0.0",
+    "cross-env": "^7.0.1",
     "esm": "^3.2.25",
     "fancy-log": "^1.3.3",
     "gulp": "^4.0.2",
@@ -32,8 +37,10 @@
     "gulp-postcss": "^8.0.0",
     "gulp-sass": "^4.0.2",
     "gulp-sourcemaps": "^2.6.5",
+    "gulp-terser": "^1.2.0",
     "lodash.debounce": "^4.0.8",
     "mocha": "^7.1.0",
+    "pre-commit": "^1.2.2",
     "vinyl-buffer": "^1.0.1",
     "vinyl-source-stream": "^2.0.0",
     "watchify": "^3.11.1"
