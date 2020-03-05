@@ -164,6 +164,7 @@ export default class extends React.Component {
         return {
           ...result,
           [key]: {
+            size: ref.size,
             ...positionInitial,
             ...R.filter(R.compose(R.not, R.isNil), R.pick(['x', 'y', 'width', 'height'], ref)),
             maskUrl: ref.maskUrl,

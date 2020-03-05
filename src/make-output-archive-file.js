@@ -71,6 +71,8 @@ export default async function (options) {
     )
   );
 
+  await mkdirp(path.join("data", `${file_name}_src`));
+
   for (const sourceCropPair of configCroppersModified) {
     const [sourceKey, sourceCropRef] = sourceCropPair;
     const positionCropper = R.pick(["x", "y", "width", "height"], sourceCropRef);
@@ -88,16 +90,16 @@ export default async function (options) {
       cropperMaskSrc: sourceCropRef.maskIsEnable ? sourceCropRef.maskUrl : null,
     });
     const fileName = `${file_name}_${sourceKey}.png`
-    const imageFile = virtualFileFromDataUrl(imageDataUrl, fileName);
-    const fileBinary = await imageFile.readAsArrayBuffer();
-    const fileNameFull = path.join("data", fileName);
-    mappingSourceKeyToSourcePath[sourceKey] = fileNameFull;
-    fs.writeFileSync(fileNameFull, Buffer.from(fileBinary));
+    const fileNameFull = path.join("data", `${file_name}_src`, fileName);
+    fs.writeFileSync(
+      fileNameFull, 
+      await getImageBuffer(imageDataUrl, ...sourceCropRef.size)
+    );
 
     if (sourceCropRef.copy && Array.isArray(sourceCropRef.copy) && !R.isEmpty(sourceCropRef.copy)) {
       const [toCopy] = sourceCropRef.copy;
       const { key: keyToCopy, size: sizeToCopy } = toCopy;
-      const fileNameFullToCopy = `./data/${file_name}_${keyToCopy}.png`;
+      const fileNameFullToCopy = `./data/${file_name}_src/${file_name}_${keyToCopy}.png`;
       mappingSourceKeyToSourcePath[keyToCopy] = fileNameFullToCopy;
       fs.writeFileSync(
         fileNameFullToCopy,
@@ -122,9 +124,6 @@ export default async function (options) {
 
   const write = vfs.src([
     "./data/**/*",
-    ...isUseSymlink ? 
-      [] : 
-      R.values(mappingSourceKeyToSourcePath).map(filepath => `!${filepath}`)
   ], {
     base: "./data",
     ...isUseSymlink && {
