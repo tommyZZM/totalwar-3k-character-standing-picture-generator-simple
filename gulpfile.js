@@ -18,6 +18,7 @@ import streamToPromise from "stream-to-promise";
 import debounce from "lodash.debounce"
 import terser from "gulp-terser"
 import through2 from "through2";
+import commonShake from "common-shakeify";
 
 // const babelrc = JSON.parse(fs.readFileSync('./babelrc.json'));
 
@@ -39,15 +40,17 @@ gulp.task('build-watch:css', gulp.parallel('build:css', function () {
 const b = browserify({
     entries:"./src/index.js",
     standalone:"app",
-    debug: process.env.IS_BEFORE_PUSH ? false : true
+    // debug: process.env.IS_BEFORE_PUSH ? false : true
 })
 .transform(babelify)
+.plugin(commonShake)
 .plugin(alias,{
     antd: "global.antd",
     react: "global.React",
     "react-dom": "global.ReactDOM",
     "ramda": "global.R",
-    "fs": "./src/polyfill/fs.js"
+    "fs": "./src/polyfill/fs.js",
+    "util": "./src/polyfill/util.js"
 })
 
 gulp.task("build", _ => {
