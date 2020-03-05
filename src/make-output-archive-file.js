@@ -36,9 +36,9 @@ export default async function (options) {
     file_name
   } = pathParams;
 
-  await mkdirp("data");
+  await rmfr("./*", { glob: true });
 
-  await rmfr("./*");
+  await mkdirp("data");
 
   // const sourceKeys = Object.keys(mappingCurrentCropperPositions);
 

@@ -96,13 +96,12 @@ class OutputModalContent extends React.Component {
                   ...filledParamsError,
                   [key]: value,
                 }
+              }, () => {
+                onChange(this.state.filledParams);
+                if (isValidValue) {
+                  onChangeOneKeySuccess(key)
+                }
               })
-
-              onChange(filledParams);
-
-              if (isValidValue) {
-                onChangeOneKeySuccess(key)
-              }
             }} />
         </label>;
       })}
@@ -169,13 +168,14 @@ export default class extends React.Component {
             ...R.filter(R.compose(R.not, R.isNil), R.pick(['x', 'y', 'width', 'height'], ref)),
             maskUrl: ref.maskUrl,
             maskLock: true, //ref.maskLock,
-            maskIsShow: false, // Boolean(ref.maskUrl),
+            maskIsShow: true, // Boolean(ref.maskUrl),
             ...R.pick([
               'maskLock',
               'maskIsShow',
               'maskPreview',
               'isShowRef',
-            ], ref.maskPosition || {}),
+              'maskIsEnable'
+            ], ref),
             maskPosition: {
               ...ref.maskPosition,
               x: maskPositionX,
