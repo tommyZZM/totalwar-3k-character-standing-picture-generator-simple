@@ -85,7 +85,7 @@ export default async function (options) {
       positionCropper,
       positionPercentageCropperMask,
       sourceImageSrc: currentImageDataUrlReadOnly,
-      cropperMaskSrc: sourceCropRef.ismaskIsEnable ? sourceCropRef.maskUrl : null,
+      cropperMaskSrc: sourceCropRef.maskIsEnable ? sourceCropRef.maskUrl : null,
     });
     const fileName = `${file_name}_${sourceKey}.png`
     const imageFile = virtualFileFromDataUrl(imageDataUrl, fileName);
