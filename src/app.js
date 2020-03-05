@@ -1,6 +1,6 @@
 import * as R from "ramda"
 import React from "react"
-import { Button, Spin, Upload, Table, Radio, Checkbox, Tooltip, Modal, Input } from "antd"
+import { Button, Spin, Upload, Table, Radio, Checkbox, Tooltip, Modal, Input, message } from "antd"
 import SelectFile, { VirtualFile } from "./components/SelectFile"
 import {
   PlusCircleOutlined,
@@ -8,24 +8,15 @@ import {
   BarcodeOutlined,
   DeleteOutlined
 } from "@ant-design/icons";
-import loadConfigCroppers from "./load-assets/load-config-croppers"
+import loadConfigWithCroppers from "./load-assets/load-config-croppers"
 import { Rnd } from "react-rnd"
 import CanvasComposites from "./components/CanvasComposites"
 import loadConfigOutput from "./load-assets/load-config-output"
-import makeOutputZipFile from "./make-output-zip-file"
+import makeOutputArchiveFile from "./make-output-archive-file"
 import { saveAs } from 'file-saver'
+import getImageSize from "./utils/get-image-size";
 
 const stopPropagation = (e) => { e.stopPropagation(); };
-
-async function getImageSizeFromDataUrl(dataUrl) {
-  const img = document.createElement("img");
-  return new Promise(resolve => {
-    img.onload = () => {
-      resolve([img.naturalWidth, img.naturalHeight])
-    };
-    img.setAttribute("src", dataUrl);
-  })
-}
 
 function getImageInitialPosition(naturalWidth, naturalHeight, containerWidth, containerHeight,
   sizeRatio = 0.6
@@ -42,6 +33,77 @@ function getCropperInitialPosition(originWidth, originHeight, containerWidth, co
     originWidth, originHeight, containerWidth, containerHeight, 0.3
   );
   return { ...position, x: 0, y: 0 }
+}
+
+class OutputModalContent extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      filledParams: {},
+      filledParamsError: {
+        type: false,
+        gender: false,
+        file_name: false
+      }
+    };
+  }
+  storageKey = key => `placeholder_path_params_${key}`
+  componentDidMount() {
+    const {
+      onChange = () => null
+    } = this.props;
+    const filledParams = {
+      type: localStorage.getItem(this.storageKey('type')),
+      gender: localStorage.getItem(this.storageKey('gender')),
+      file_name: localStorage.getItem(this.storageKey('file_name'))
+    };
+    this.setState({ filledParams });
+    onChange(filledParams);
+  }
+  render() {
+    const {
+      onChange = () => null,
+      onChangeOneKeySuccess = () => null
+    } = this.props;
+    const {
+      filledParams,
+      filledParamsError
+    } = this.state;
+
+    return <div>
+      <div>ui/characters/<b>{`{{type}}`}</b>/<b>{`{{gender}}`}</b>/.../<b>{`{{file_name}}`}.png</b></div>
+      {R.keys(filledParams).map((key, index) => {
+        return <label className={"modal-label"} key={key}><b>{key}:</b>
+          <Input
+            value={filledParams[key]}
+            className={`modal-input has-error-${filledParamsError[key]}`}
+            onChange={(e) => {
+              const value = e.target.value;
+              const isValidValue = /^[\w\-._\$]+$/.test(value);
+
+              localStorage.setItem(this.storageKey(key), value);
+
+              this.setState({
+                filledParams: {
+                  ...filledParams,
+                  [key]: value,
+                },
+                filledParamsError: {
+                  ...filledParamsError,
+                  [key]: value,
+                }
+              })
+
+              onChange(filledParams);
+
+              if (isValidValue) {
+                onChangeOneKeySuccess(key)
+              }
+            }} />
+        </label>;
+      })}
+    </div>;
+  }
 }
 
 export default class extends React.Component {
@@ -61,45 +123,71 @@ export default class extends React.Component {
   componentDidMount() {
     (async () => {
       this.setState({ isInitialLoading: true });
-      const configCroppers = await loadConfigCroppers();
+      const configWithCroppers = await loadConfigWithCroppers();
       const configOutput = await loadConfigOutput();
-      const rect = this.refCropper.current.getBoundingClientRect();
+
+      this._applyConfigWithCroppers(configWithCroppers);
+
       this.setState({
         isInitialLoading: false,
-        configCroppers,
         configOutput,
-        mappingCurrentCropperPositions: configCroppers.reduce((result, [key, ref]) => {
-          const [originWidth, originHeight] = ref.size;
-          const [
-            originMaskWidth = originWidth * 0.5,
-            originMaskHeight = originWidth * 0.5
-          ] = ref.maskSize || [];
-          const positionInitial = getCropperInitialPosition(
-            originWidth, originHeight, rect.width, rect.height
-          );
-          return {
-            ...result,
-            [key]: {
-              ...positionInitial,
-              maskUrl: ref.maskUrl,
-              maskLock: true, //ref.maskLock,
-              maskIsShow: false, // Boolean(ref.maskUrl),
-              maskPosition: {
-                x: 0,
-                y: 0,
-                width: originMaskWidth / originWidth,
-                height: originMaskHeight / originHeight
-              }
-            }
-          }
-        }, {})
       });
     })();
+  }
+  _applyConfigWithCroppers = (configWithCroppers) => {
+    const { imagePosition, croppers: configCroppers = [] } = configWithCroppers;
+    const rect = this.refCropper.current.getBoundingClientRect();
+
+    // console.log('_applyConfigWithCroppers', configWithCroppers);
+
+    if (R.isEmpty(configWithCroppers)) {
+      throw new Error("croppers can't be null");
+    }
+
+    this.setState({
+      configCroppers,
+      currentImagePosition: imagePosition,
+      mappingCurrentCropperPositions: configCroppers.reduce((result, [key, ref]) => {
+        const [originWidth, originHeight] = ref.size;
+        const {
+          x: maskPositionX = 0,
+          y: maskPositionY = 0,
+          width: maskPositionWidth = 0.5,
+          height: maskPositionHeight = 0.5,
+        } = ref.maskPosition || {};
+        const positionInitial = getCropperInitialPosition(
+          originWidth, originHeight, rect.width, rect.height
+        );
+        return {
+          ...result,
+          [key]: {
+            ...positionInitial,
+            ...R.filter(R.compose(R.not, R.isNil), R.pick(['x', 'y', 'width', 'height'], ref)),
+            maskUrl: ref.maskUrl,
+            maskLock: true, //ref.maskLock,
+            maskIsShow: false, // Boolean(ref.maskUrl),
+            ...R.pick([
+              'maskLock',
+              'maskIsShow',
+              'maskPreview',
+              'isShowRef',
+            ], ref.maskPosition || {}),
+            maskPosition: {
+              ...ref.maskPosition,
+              x: maskPositionX,
+              y: maskPositionY,
+              width: maskPositionWidth,
+              height: maskPositionHeight
+            }
+          }
+        }
+      }, {})
+    });
   }
   _handleUpdateFile = async (vf) => {
     this.setState({ isFilePicking: false });
     const dataUrl = await vf.readAsDataUrl();
-    const [width, height] = await getImageSizeFromDataUrl(dataUrl);
+    const [width, height] = await getImageSize(dataUrl);
     const rect = this.refCropper.current.getBoundingClientRect();
     const imagePosition = getImageInitialPosition(
       width, height, rect.width, rect.height
@@ -113,11 +201,8 @@ export default class extends React.Component {
   }
   _exportZippedPath = async () => {
     await new Promise((resolve, reject) => {
-      const filledParams = {
-        type: null,
-        gender: null,
-        file_name: null
-      };
+      let filledParams = {};
+
       const modal = Modal.confirm({
         title: "填写路径参数",
         okText: "导出",
@@ -126,21 +211,19 @@ export default class extends React.Component {
         },
         cancelText: "取消",
         onCancel: () => { reject(); },
-        content: <div>
-          <div>ui/characters/<b>{`{{type}}`}</b>/<b>{`{{gender}}`}</b>/.../<b>{`{{file_name}}`}.png</b></div>
-          {R.keys(filledParams).map((key, index) => {
-            return <label className={"modal-label"} key={key}><b>{key}:</b><Input className={"modal-input"} onChange={(e) => {
-              const value = e.target.value;
-              filledParams[key] = value;
-              modal.update({
-                okButtonProps: {
-                  disabled: R.values(filledParams).filter(Boolean).length !==
-                    R.keys(filledParams).length
-                }
-              });
-            }} /></label>;
-          })}
-        </div>,
+        content: <OutputModalContent
+          onChangeOneKeySuccess={() => {
+            modal.update({
+              okButtonProps: {
+                disabled: R.values(filledParams).filter(Boolean).length !==
+                  R.keys(filledParams).length
+              }
+            });
+          }}
+          onChange={filledParamsEdited => {
+            filledParams = filledParamsEdited;
+          }}
+        />,
         onOk: async () => {
           const {
             currentImagePosition,
@@ -150,7 +233,7 @@ export default class extends React.Component {
             mappingCurrentCropperPositions
           } = this.state;
 
-          const [blob, zipFileName] = await makeOutputZipFile({
+          const [blob, zipFileName] = await makeOutputArchiveFile({
             currentImageDataUrlReadOnly,
             pathParams: filledParams,
             configCroppers,
@@ -162,7 +245,7 @@ export default class extends React.Component {
           saveAs(blob, zipFileName);
         },
       })
-    }); 
+    });
   }
   render() {
     const {
@@ -240,7 +323,7 @@ export default class extends React.Component {
                 </Upload.Dragger>
             }
             {refCurrentCropper.maskPreview &&
-              <CanvasComposites 
+              <CanvasComposites
                 className={"preview-cropper-selected"}
                 style={{
                   opacity: refCurrentCropper.maskPreview ? 1 : 0,
@@ -388,7 +471,14 @@ export default class extends React.Component {
               </SelectFile>
             </div>
             <div style={{ marginBottom: 10 }}>
-              <Button disabled={true} style={{ marginRight: 10 }}>导入剪裁配置</Button>
+              <SelectFile accept={'application/json'} onSelectFiles={async ({ virtualFiles }) => {
+                const [vf] = virtualFiles;
+                const jsonString = await vf.readAsText();
+                this._applyConfigWithCroppers(JSON.parse(jsonString));
+                message.success('剪裁配置已读取');
+              }}>
+                <Button style={{ marginRight: 10 }}>导入剪裁配置</Button>
+              </SelectFile>
               <Button onClick={this._exportZippedPath}>导出结果包</Button>
             </div>
             <div style={{ marginBottom: 10 }}>
@@ -458,9 +548,8 @@ export default class extends React.Component {
                                 </Tooltip>
                               </SelectFile>
                             </span>
-                            <span style={{ 
-                              marginRight: 5 
-                              
+                            <span style={{
+                              marginRight: 5
                             }} onClick={stopPropagation}>
                               <div><Checkbox
                                 disabled={!isChecked}

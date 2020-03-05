@@ -245,5 +245,9 @@ body {
   }
   .modal-input {
     flex-grow: 1;
+    &.has-error-true {
+      background-color: #fff;
+      border-color: #ff4d4f;
+    }
   }
 }

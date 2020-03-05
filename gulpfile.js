@@ -17,6 +17,7 @@ import cleanCSS from "gulp-clean-css";
 import streamToPromise from "stream-to-promise";
 import debounce from "lodash.debounce"
 import terser from "gulp-terser"
+import through2 from "through2";
 
 // const babelrc = JSON.parse(fs.readFileSync('./babelrc.json'));
 
@@ -76,7 +77,7 @@ function bundle(b) {
         .on('error', e=>log(e))
         .pipe(source('app.js'))
         .pipe(buffer())
-        .pipe(terser())
+        .pipe(process.env.IS_BEFORE_PUSH ? terser() : through2.obj())
         // .pipe(sourcemaps.init({loadMaps: true}))
         // Add transformation tasks to the pipeline here.
         // .pipe(sourcemaps.write())

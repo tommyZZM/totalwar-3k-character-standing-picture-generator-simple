@@ -4,14 +4,22 @@ import { Buffer } from "buffer"
 import mkdirp from "mkdirp-promise";
 import vfs from "vinyl-fs"
 // import glob from "glob"
-import { zip } from "gulp-vinyl-zip"
+import tar from "gulp-tar"
 import streamToPromise from "stream-to-promise"
 import { virtualFileFromDataUrl } from "./components/SelectFile"
 import { getImageCompositesBy, getImageResized } from "./components/CanvasComposites"
 import { templateStringDoubleBraces } from "./utils/template-string-braces"
 import path from "path"
 import fs from "fs"
+import rmfr from "rmfr"
 import through2 from "through2";
+import getImageSize from "./utils/get-image-size";
+
+async function getImageBuffer(src, width, height) {
+  const dataUrl = await getImageResized(src, width, height);
+  const file = virtualFileFromDataUrl(dataUrl, 'image.png');
+  return Buffer.from(await file.readAsArrayBuffer());
+}
 
 export default async function (options) {
   const {
@@ -29,16 +37,37 @@ export default async function (options) {
 
   await mkdirp("data");
 
+  await rmfr("./*");
+
   // const sourceKeys = Object.keys(mappingCurrentCropperPositions);
 
   const mappingSourceKeyToSourcePath = {};
 
-  for (const sourceCropPair of configCroppers) {
-    const [sourceKey, sourceCropRefDefault] = sourceCropPair;
-    const sourceCropRef = {
+  const configCroppersModified = configCroppers.map(([sourceKey, sourceCropRefDefault]) => {
+    return [sourceKey, {
       ...sourceCropRefDefault,
       ...mappingCurrentCropperPositions[sourceKey]
-    };
+    }]
+  });
+
+  fs.writeFileSync(
+    `./data/${file_name}.croppers.config.json`,
+    Buffer.from(JSON.stringify({
+      imagePosition: positionSourceImage,
+      croppers: configCroppersModified
+    }, null, 2))
+  );
+
+  fs.writeFileSync(
+    `./data/${file_name}.png`,
+    await getImageBuffer(
+      currentImageDataUrlReadOnly,
+      ...await getImageSize(currentImageDataUrlReadOnly)
+    )
+  );
+
+  for (const sourceCropPair of configCroppersModified) {
+    const [sourceKey, sourceCropRef] = sourceCropPair;
     const positionCropper = R.pick(["x", "y", "width", "height"], sourceCropRef);
     const positionPercentageCropperMask = {
       xPercentage: sourceCropRef?.maskPosition.x,
@@ -63,11 +92,12 @@ export default async function (options) {
     if (sourceCropRef.copy && Array.isArray(sourceCropRef.copy) && !R.isEmpty(sourceCropRef.copy)) {
       const [toCopy] = sourceCropRef.copy;
       const { key: keyToCopy, size: sizeToCopy } = toCopy;
-      const imageDataUrlToCopy = await getImageResized(imageDataUrl, ...sizeToCopy);
       const fileNameFullToCopy = `./data/${file_name}_${keyToCopy}.png`;
-      const imageFileToCopy = virtualFileFromDataUrl(imageDataUrlToCopy, fileName);
-      mappingSourceKeyToSourcePath[sourceKey] = fileNameFullToCopy;
-      fs.writeFileSync(fileNameFullToCopy, Buffer.from(await imageFileToCopy.readAsArrayBuffer()));
+      mappingSourceKeyToSourcePath[keyToCopy] = fileNameFullToCopy;
+      fs.writeFileSync(
+        fileNameFullToCopy,
+        await getImageBuffer(imageDataUrl, ...sizeToCopy)
+      );
     }
   }
 
@@ -86,19 +116,24 @@ export default async function (options) {
   }
 
   const write = vfs.src("./data/**/*", {
-    base: "./data"
-  })  
+    base: "./data",
+    resolveSymlinks: false // we want preserve symlink here
+  })
     .pipe(through2.obj((file, enc, next) => {
+      if (file.isSymbolic()) {
+        file._symlink = path.relative(path.dirname(file.path), file._symlink);
+      }
+      console.log('file.isSymbolic()', file.isSymbolic(), file._symlink);
       next(null, file);
     }))
-    .pipe(zip(`${file_name}.zip`))
+    .pipe(tar(`${file_name}.tar`))
     .pipe(vfs.dest("./dist"));
 
   await streamToPromise(write);
 
-  const buf = fs.readFileSync(`./dist/${file_name}.zip`);
+  const buf = fs.readFileSync(`./dist/${file_name}.tar`);
 
   const blob = new Blob([buf.buffer], {type: "application/octet-stream"});
 
-  return [blob, `${file_name}.zip`]
+  return [blob, `${file_name}.tar`]
 }
