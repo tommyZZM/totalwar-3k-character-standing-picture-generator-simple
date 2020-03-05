@@ -29,6 +29,7 @@ export default async function (options) {
     configOutput,
     positionSourceImage,
     mappingCurrentCropperPositions,
+    isUseSymlink = false
   } = options;
 
   const {
@@ -44,9 +45,13 @@ export default async function (options) {
   const mappingSourceKeyToSourcePath = {};
 
   const configCroppersModified = configCroppers.map(([sourceKey, sourceCropRefDefault]) => {
+    const sourceCropRefPatch = mappingCurrentCropperPositions[sourceKey];
     return [sourceKey, {
       ...sourceCropRefDefault,
-      ...mappingCurrentCropperPositions[sourceKey]
+      ...sourceCropRefPatch,
+      ...!sourceCropRefPatch.maskIsEnable && {
+        maskUrl: sourceCropRefDefault.maskUrl || null
+      }
     }]
   });
 
@@ -80,7 +85,7 @@ export default async function (options) {
       positionCropper,
       positionPercentageCropperMask,
       sourceImageSrc: currentImageDataUrlReadOnly,
-      cropperMaskSrc: sourceCropRef.maskUrl,
+      cropperMaskSrc: sourceCropRef.ismaskIsEnable ? sourceCropRef.maskUrl : null,
     });
     const fileName = `${file_name}_${sourceKey}.png`
     const imageFile = virtualFileFromDataUrl(imageDataUrl, fileName);
@@ -115,15 +120,21 @@ export default async function (options) {
     fs.symlinkSync(sourcePath, destPath);
   }
 
-  const write = vfs.src("./data/**/*", {
+  const write = vfs.src([
+    "./data/**/*",
+    ...isUseSymlink ? 
+      [] : 
+      R.values(mappingSourceKeyToSourcePath).map(filepath => `!${filepath}`)
+  ], {
     base: "./data",
-    resolveSymlinks: false // we want preserve symlink here
+    ...isUseSymlink && {
+      resolveSymlinks: false // we want preserve symlink here
+    }
   })
     .pipe(through2.obj((file, enc, next) => {
       if (file.isSymbolic()) {
         file._symlink = path.relative(path.dirname(file.path), file._symlink);
       }
-      console.log('file.isSymbolic()', file.isSymbolic(), file._symlink);
       next(null, file);
     }))
     .pipe(tar(`${file_name}.tar`))

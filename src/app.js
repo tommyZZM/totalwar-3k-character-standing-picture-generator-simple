@@ -6,7 +6,9 @@ import {
   PlusCircleOutlined,
   InboxOutlined,
   BarcodeOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  MinusCircleOutlined,
+  CheckCircleOutlined
 } from "@ant-design/icons";
 import loadConfigWithCroppers from "./load-assets/load-config-croppers"
 import { Rnd } from "react-rnd"
@@ -50,7 +52,8 @@ class OutputModalContent extends React.Component {
   storageKey = key => `placeholder_path_params_${key}`
   componentDidMount() {
     const {
-      onChange = () => null
+      onChange = () => null,
+      onChangeOneKeySuccess = () => null
     } = this.props;
     const filledParams = {
       type: localStorage.getItem(this.storageKey('type')),
@@ -59,6 +62,7 @@ class OutputModalContent extends React.Component {
     };
     this.setState({ filledParams });
     onChange(filledParams);
+    onChangeOneKeySuccess();
   }
   render() {
     const {
@@ -333,7 +337,7 @@ export default class extends React.Component {
                 sourceImageSrc={currentImageDataUrlReadOnly}
                 positionSourceImage={R.pick(["x", "y", "width", "height"], currentImagePosition)}
                 positionCropper={positionCurrentCropper}
-                cropperMaskSrc={refCurrentCropper.maskUrl}
+                cropperMaskSrc={refCurrentCropper.maskIsEnable ? refCurrentCropper.maskUrl : null}
                 positionPercentageCropperMask={{
                   xPercentage: refCurrentCropper?.maskPosition.x,
                   yPercentage: refCurrentCropper?.maskPosition.y,
@@ -400,7 +404,7 @@ export default class extends React.Component {
                       opacity: refPatch.isShowRef ? 0.66 : 0
                     }}
                   />
-                  {refPatch.maskUrl && <div
+                  {refPatch.maskUrl && refPatch.maskIsEnable && <div
                     className={`mask-wrap ` +
                       // `has-mask-${Boolean(refPatch.maskUrl)} ` +
                       `is-mask-show-${Boolean(refPatch.maskIsShow)} ` +
@@ -441,8 +445,8 @@ export default class extends React.Component {
                               ...refPatch,
                               maskPosition: {
                                 ...maskPosition,
-                                width: Math.min(1, ref.offsetWidth / position.width),
-                                height: Math.min(1, ref.offsetHeight / position.height),
+                                width: ref.offsetWidth / position.width,
+                                height: ref.offsetHeight / position.height,
                               }
                             }
                           }
@@ -460,7 +464,7 @@ export default class extends React.Component {
         <div className={"right-sider-bar"}>
           <React.Fragment>
             <div style={{ marginBottom: 10 }}>
-              <SelectFile onSelectFiles={async ({ virtualFiles }) => {
+              <SelectFile accept={"image/*"} onSelectFiles={async ({ virtualFiles }) => {
                 const [vf] = virtualFiles;
                 await this._handleUpdateFile(vf);
               }}>
@@ -529,8 +533,18 @@ export default class extends React.Component {
                                 }}>参考位置</Checkbox>
                             </span>
                             <span style={{ marginRight: 5 }} onClick={stopPropagation}>
-                              <SelectFile disabled={!isChecked} onSelectFiles={async ({ virtualFiles }) => {
-                                // const [vf] = virtualFiles;
+                              <SelectFile accept={"image/*"} disabled={!isChecked} onSelectFiles={async ({ virtualFiles }) => {
+                                const [vf] = virtualFiles;
+                                const dataUrl = await vf.readAsDataUrl();
+                                this.setState({
+                                  mappingCurrentCropperPositions: {
+                                    ...mappingCurrentCropperPositions,
+                                    [key]: {
+                                      ...refPatch,
+                                      maskUrl: dataUrl
+                                    }
+                                  }
+                                });
                                 // TODO:
                               }}>
                                 <Tooltip title={refPatch.maskUrl ? <React.Fragment>
@@ -581,16 +595,35 @@ export default class extends React.Component {
                                     }
                                   });
                                 }}
-                              >蒙层预览</Checkbox></div>
+                              >剪裁预览</Checkbox></div>
                             </span>
                             <span onClick={stopPropagation}>
-                              <Tooltip title={"删除蒙层"}>
+                              <Tooltip
+                                title={refPatch.maskIsEnable ?
+                                  "禁用蒙层" : "启用蒙层"}
+                              >
                                 <Button
                                   // disabled={!refPatch.maskUrl && !isChecked}
-                                  disabled={true}
+                                  // disabled={refPatch.maskIsEnable}
+                                  onClick={() => {
+                                    this.setState({
+                                      mappingCurrentCropperPositions: {
+                                        ...mappingCurrentCropperPositions,
+                                        [key]: {
+                                          ...refPatch,
+                                          maskIsEnable: !refPatch.maskIsEnable
+                                        }
+                                      }
+                                    });
+                                  }}
+                                  {...refPatch.maskIsEnable && {
+                                    type: "danger"
+                                  }}
                                   size={"small"}
-                                  type={"danger"}
-                                  icon={<DeleteOutlined />}
+                                  icon={refPatch.maskIsEnable ? 
+                                    <MinusCircleOutlined /> :
+                                    <CheckCircleOutlined />
+                                  }
                                 />
                               </Tooltip>
                             </span>
