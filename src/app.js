@@ -270,8 +270,8 @@ export default class extends React.Component {
             {
               currentImageDataUrlReadOnly ?
                 <Rnd
-                  enableResizing={!refCurrentCropper.maskLock}
-                  disableDragging={refCurrentCropper.maskLock}
+                  enableResizing={refCurrentCropper?.maskLock}
+                  disableDragging={refCurrentCropper?.maskLock}
                   lockAspectRatio={true}
                   size={{ ...currentImagePosition }}
                   position={{ ...currentImagePosition }}

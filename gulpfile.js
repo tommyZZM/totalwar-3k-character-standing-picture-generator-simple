@@ -80,7 +80,7 @@ function bundle(b) {
         .on('error', e=>log(e))
         .pipe(source('app.js'))
         .pipe(buffer())
-        .pipe(process.env.IS_BEFORE_PUSH ? terser() : through2.obj())
+        .pipe(process.env.IS_BEFORE_PUSH ? terser({ output: { comments: false, beautify: false } }) : through2.obj())
         // .pipe(sourcemaps.init({loadMaps: true}))
         // Add transformation tasks to the pipeline here.
         // .pipe(sourcemaps.write())
