@@ -17,6 +17,7 @@ import loadConfigOutput from "./load-assets/load-config-output"
 import makeOutputArchiveFile from "./make-output-archive-file"
 import { saveAs } from 'file-saver'
 import getImageSize from "./utils/get-image-size";
+import readArchiveFileTakeMajorConfig from "./read-archive-file";
 
 const stopPropagation = (e) => { e.stopPropagation(); };
 
@@ -37,6 +38,10 @@ function getCropperInitialPosition(originWidth, originHeight, containerWidth, co
   return { ...position, x: 0, y: 0 }
 }
 
+const REGEX_VAILD_FILENAME = () => /^[\w\-_\$]+$/;
+
+const pathParamsStorageKey = key => `placeholder_path_params_${key}`
+
 class OutputModalContent extends React.Component {
   constructor(props) {
     super(props);
@@ -46,46 +51,68 @@ class OutputModalContent extends React.Component {
         type: false,
         gender: false,
         file_name: false
-      }
+      },
+      outPutName: null
     };
   }
-  storageKey = key => `placeholder_path_params_${key}`
   componentDidMount() {
     const {
       onChange = () => null,
-      onChangeOneKeySuccess = () => null
+      // onChangeOneKeySuccess = () => null
     } = this.props;
     const filledParams = {
-      type: localStorage.getItem(this.storageKey('type')),
-      gender: localStorage.getItem(this.storageKey('gender')),
-      file_name: localStorage.getItem(this.storageKey('file_name'))
+      type: sessionStorage.getItem(pathParamsStorageKey('type')),
+      gender: sessionStorage.getItem(pathParamsStorageKey('gender')),
+      file_name: sessionStorage.getItem(pathParamsStorageKey('file_name')),
     };
-    this.setState({ filledParams });
-    onChange(filledParams);
-    onChangeOneKeySuccess();
+    this.setState({ 
+      filledParams,
+      // outPutName: sessionStorage.getItem(this.pathParamsStorageKey('outPutName')),
+    }, () => {
+      // const { outPutName } = this.state;
+
+      const isValidFilledParams = R.values(filledParams).filter(value => {
+        return value && REGEX_VAILD_FILENAME().test(value);
+      }).length === R.keys(filledParams).length;
+
+      // const isValidOutputName = !outPutName || REGEX_VAILD_FILENAME().test(outPutName);
+
+      onChange(
+        filledParams,
+        null, // outPutName || filledParams.file_name,
+        isValidFilledParams
+      );
+    });
   }
   render() {
     const {
       onChange = () => null,
-      onChangeOneKeySuccess = () => null
+      // onChangeOneKeySuccess = () => null
     } = this.props;
     const {
       filledParams,
-      filledParamsError
+      filledParamsError,
+      outPutName
     } = this.state;
+
+    const isHasError = R.values(filledParamsError).some(Boolean);
 
     return <div>
       <div>ui/characters/<b>{`{{type}}`}</b>/<b>{`{{gender}}`}</b>/.../<b>{`{{file_name}}`}.png</b></div>
       {R.keys(filledParams).map((key, index) => {
-        return <label className={"modal-label"} key={key}><b>{key}:</b>
+        const keyName = key;
+        if (key === 'output_name') {
+          keyName = '{{名称}}.tar'
+        }
+        return <label className={"modal-label"} key={key}><b>{keyName}:</b>
           <Input
             value={filledParams[key]}
             className={`modal-input has-error-${filledParamsError[key]}`}
             onChange={(e) => {
               const value = e.target.value;
-              const isValidValue = /^[\w\-._\$]+$/.test(value);
+              const isValidValue = REGEX_VAILD_FILENAME().test(value);
 
-              localStorage.setItem(this.storageKey(key), value);
+              sessionStorage.setItem(pathParamsStorageKey(key), value);
 
               this.setState({
                 filledParams: {
@@ -94,17 +121,49 @@ class OutputModalContent extends React.Component {
                 },
                 filledParamsError: {
                   ...filledParamsError,
-                  [key]: value,
+                  [key]: !isValidValue,
                 }
               }, () => {
-                onChange(this.state.filledParams);
-                if (isValidValue) {
-                  onChangeOneKeySuccess(key)
-                }
+                onChange(
+                  {
+                    ...this.state.filledParams,
+                  },
+                  this.state.outPutName || null,
+                  !R.values(this.state.filledParamsError).some(Boolean)
+                );
               })
             }} />
         </label>;
       })}
+      {/* <label className={"modal-label"}><b>{`{{保存}}.tar`}:</b>
+        <Input
+          value={outPutName}
+          className={`modal-input has-error-${filledParamsError.outPutName}`}
+          placeholder={`{{file_name}}`}
+          onChange={(e) => {
+            const value = e.target.value;
+            const isValidValue = !value || REGEX_VAILD_FILENAME().test(value);
+
+            sessionStorage.setItem(pathParamsStorageKey('outPutName'), value);
+
+            this.setState({
+              outPutName: R.value,
+              filledParamsError: {
+                ...filledParamsError,
+                outPutName: !isValidValue,
+              }
+            }, () => {
+              onChange(
+                {
+                  ...this.state.filledParams,
+                }, 
+                this.state.outPutName || null,
+                R.values(this.state.filledParamsError).some(Boolean)
+              );
+            })
+          }} />
+      </label> */}
+      {isHasError && <small style={{ color: '#e74c3c' }}>文件名只允许数字、文字、-、_、$</small>}
     </div>;
   }
 }
@@ -137,8 +196,8 @@ export default class extends React.Component {
       });
     })();
   }
-  _applyConfigWithCroppers = (configWithCroppers) => {
-    const { imagePosition, croppers: configCroppers = [] } = configWithCroppers;
+  _applyConfigWithCroppers = (configWithCroppers, isResetSize = true) => {
+    const { imagePosition = {}, croppers: configCroppers = [] } = configWithCroppers;
     const rect = this.refCropper.current.getBoundingClientRect();
 
     // console.log('_applyConfigWithCroppers', configWithCroppers);
@@ -149,7 +208,11 @@ export default class extends React.Component {
 
     this.setState({
       configCroppers,
-      currentImagePosition: imagePosition,
+      currentImagePosition: {
+        ...this.state.currentImagePosition,
+        ...R.pick(['x', 'y'], imagePosition),
+        ...isResetSize && R.pick(['width', 'height'], imagePosition)
+      },
       mappingCurrentCropperPositions: configCroppers.reduce((result, [key, ref]) => {
         const [originWidth, originHeight] = ref.size;
         const {
@@ -190,23 +253,35 @@ export default class extends React.Component {
     });
   }
   _handleUpdateFile = async (vf) => {
-    this.setState({ isFilePicking: false });
+    this.setState({ isFilePicking: true });
     const dataUrl = await vf.readAsDataUrl();
     const [width, height] = await getImageSize(dataUrl);
     const rect = this.refCropper.current.getBoundingClientRect();
-    const imagePosition = getImageInitialPosition(
+    let imagePosition = getImageInitialPosition(
       width, height, rect.width, rect.height
     );
-    this.setState({
-      isFilePicking: true,
-      currentImageDataUrlReadOnly: dataUrl,
-      currentImagePosition: imagePosition,
-      // mappingCurrentCropperPositions: {}
-    });
+    if (this.state.currentImageDataUrlReadOnly) {
+      const lastWidth = this.state.currentImagePosition.width;
+      const lastHeight = this.state.currentImagePosition.height;
+      imagePosition = {
+        ...R.pick(['x', 'y'], this.state.currentImagePosition),
+        width: lastHeight * (width / height),
+        height: lastHeight
+      }
+    }
+    return new Promise(resolve => {
+      this.setState({
+        isFilePicking: false,
+        currentImageDataUrlReadOnly: dataUrl,
+        currentImagePosition: imagePosition,
+        // mappingCurrentCropperPositions: {}
+      }, () => resolve());
+    })
   }
   _exportZippedPath = async () => {
     await new Promise((resolve, reject) => {
       let filledParams = {};
+      let outputName = null;
 
       const modal = Modal.confirm({
         title: "填写路径参数",
@@ -217,16 +292,19 @@ export default class extends React.Component {
         cancelText: "取消",
         onCancel: () => { reject(); },
         content: <OutputModalContent
-          onChangeOneKeySuccess={() => {
+          onChange={(
+            filledParamsEdited,
+            outputNameEdited = filledParamsEdited?.file_name,
+            success
+          ) => {
+            filledParams = filledParamsEdited;
+            outputName = outputNameEdited;
+            // console.log(filledParamsEdited, outputNameEdited, 'success', success)
             modal.update({
               okButtonProps: {
-                disabled: R.values(filledParams).filter(Boolean).length !==
-                  R.keys(filledParams).length
+                disabled: !success
               }
             });
-          }}
-          onChange={filledParamsEdited => {
-            filledParams = filledParamsEdited;
           }}
         />,
         onOk: async () => {
@@ -244,7 +322,8 @@ export default class extends React.Component {
             configCroppers,
             configOutput,
             positionSourceImage: R.pick(["x", "y", "width", "height"], currentImagePosition),
-            mappingCurrentCropperPositions
+            mappingCurrentCropperPositions,
+            outputName
           });
 
           saveAs(blob, zipFileName);
@@ -252,9 +331,37 @@ export default class extends React.Component {
       })
     });
   }
+  _applyConfigFromArchiveFile = async (vf) => {
+    const {
+      targetFileNameWithoutExtension,
+      vfileSourceImage,
+      configWithCroppers
+    } = await readArchiveFileTakeMajorConfig(vf);
+    // ...
+    this.setState({ isFilePicking: true });
+    try {
+      if (!vfileSourceImage || !configWithCroppers) {
+        throw new Error('{{file}}.png and {{file}}.cropper.config.json not found');
+      }
+      await this._handleUpdateFile(vfileSourceImage);
+      await this._applyConfigWithCroppers(configWithCroppers);
+      // console.log('after _applyConfigFromArchiveFile', this.state.currentImagePosition)
+      const { pathParams } = configWithCroppers;
+      sessionStorage.setItem(pathParamsStorageKey('file_name'), targetFileNameWithoutExtension);
+      for (const [key, value] of R.toPairs(pathParams)) {
+        sessionStorage.setItem(pathParamsStorageKey(key), value);
+      }
+      message.success(`读取数据完成`);
+    } catch (error) {
+      message.error(`读取数据遇到异常: ${error.message}`);
+    } finally {
+      this.setState({ isFilePicking: false });
+    }
+  }
   render() {
     const {
       currentImageDataUrlReadOnly,
+      isFilePicking = false,
       isInitialLoading = false,
       currentImagePosition,
       mappingCurrentCropperPositions,
@@ -268,7 +375,7 @@ export default class extends React.Component {
 
     // console.log("refCurrentCropper?.maskPosition", refCurrentCropper?.maskPosition);
 
-    return <Spin wrapperClassName={"spin-fill"} spinning={isInitialLoading}>
+    return <Spin wrapperClassName={"spin-fill"} spinning={isInitialLoading || isFilePicking}>
       <div className={"editor"}>
         <div className={"left"}>
           <div ref={this.refCropper} className={"left-cropper"}>
@@ -317,7 +424,13 @@ export default class extends React.Component {
                   fileList={[]}
                   beforeUpload={async (file) => {
                     const vf = new VirtualFile(file);
-                    await this._handleUpdateFile(vf);
+                    if (vf.type.startsWith('image/')) {
+                      await this._handleUpdateFile(vf);
+                    } else if (vf.type === 'application/zip') {
+                      await this._applyConfigFromArchiveFile(vf);
+                    } else {
+                      message.error('所选文件格式不正确')
+                    }
                   }}
                   showUploadList={false}
                 >
@@ -465,10 +578,13 @@ export default class extends React.Component {
         <div className={"right-sider-bar"}>
           <React.Fragment>
             <div style={{ marginBottom: 10 }}>
-              <SelectFile accept={"image/*"} onSelectFiles={async ({ virtualFiles }) => {
-                const [vf] = virtualFiles;
-                await this._handleUpdateFile(vf);
-              }}>
+              <SelectFile accept={"image/*"}
+                onSelectFilesWithError={() => message.error('仅支持图片文件')}
+                onSelectFiles={async ({ virtualFiles }) => {
+                  const [vf] = virtualFiles;
+                  await this._handleUpdateFile(vf);
+                }}
+              >
                 <Button type={"primary"}>
                   <PlusCircleOutlined />
                   <span>{currentImageDataUrlReadOnly ? "选择新" : "选择"}图片</span>
@@ -476,15 +592,26 @@ export default class extends React.Component {
               </SelectFile>
             </div>
             <div style={{ marginBottom: 10 }}>
-              <SelectFile accept={'application/json'} onSelectFiles={async ({ virtualFiles }) => {
-                const [vf] = virtualFiles;
-                const jsonString = await vf.readAsText();
-                this._applyConfigWithCroppers(JSON.parse(jsonString));
-                message.success('剪裁配置已读取');
-              }}>
-                <Button style={{ marginRight: 10 }}>导入剪裁配置</Button>
+              <SelectFile
+                accept={'application/json,application/zip'}
+                onSelectFilesWithError={() => message.error('所选文件格式不正确')}
+                onSelectFiles={async ({ virtualFiles }) => {
+                  const [vf] = virtualFiles;
+                  const jsonString = await vf.readAsText();
+                  if (vf.type === 'application/json') {
+                    this._applyConfigWithCroppers(JSON.parse(jsonString), false);
+                    message.success('剪裁配置已读取');
+                  } else if (vf.type === 'application/zip') {
+                    this._applyConfigFromArchiveFile(vf);
+                  }
+                }}
+              >
+                <Button style={{ marginRight: 10 }}>导入...</Button>
               </SelectFile>
-              <Button onClick={this._exportZippedPath}>导出结果包</Button>
+              <Button
+                disabled={!currentImageDataUrlReadOnly}
+                onClick={this._exportZippedPath}
+              >导出</Button>
             </div>
             <div style={{ marginBottom: 10 }}>
               <Table
@@ -621,7 +748,7 @@ export default class extends React.Component {
                                     type: "danger"
                                   }}
                                   size={"small"}
-                                  icon={refPatch.maskIsEnable ? 
+                                  icon={refPatch.maskIsEnable ?
                                     <MinusCircleOutlined /> :
                                     <CheckCircleOutlined />
                                   }

@@ -4,7 +4,8 @@ import { Buffer } from "buffer"
 import mkdirp from "mkdirp-promise";
 import vfs from "vinyl-fs"
 // import glob from "glob"
-import tar from "gulp-tar"
+// import tar from "gulp-tar"
+import { zip } from "gulp-vinyl-zip"
 import streamToPromise from "stream-to-promise"
 import { virtualFileFromDataUrl } from "./components/SelectFile"
 import { getImageCompositesBy, getImageResized } from "./components/CanvasComposites"
@@ -29,16 +30,20 @@ export default async function (options) {
     configOutput,
     positionSourceImage,
     mappingCurrentCropperPositions,
-    isUseSymlink = false
+    isUseSymlink = false,
   } = options;
 
   const {
     file_name
   } = pathParams;
 
+  const outputName = options.outputName || file_name;
+
   await rmfr("./*", { glob: true });
 
-  await mkdirp("data");
+  const workDir = `./${outputName}/data/`;
+
+  await mkdirp(workDir);
 
   // const sourceKeys = Object.keys(mappingCurrentCropperPositions);
 
@@ -56,22 +61,23 @@ export default async function (options) {
   });
 
   fs.writeFileSync(
-    `./data/${file_name}.croppers.config.json`,
+    `./${workDir}/${file_name}.croppers.config.json`,
     Buffer.from(JSON.stringify({
       imagePosition: positionSourceImage,
-      croppers: configCroppersModified
+      croppers: configCroppersModified,
+      pathParams
     }, null, 2))
   );
 
   fs.writeFileSync(
-    `./data/${file_name}.png`,
+    `./${workDir}/${file_name}.png`,
     await getImageBuffer(
       currentImageDataUrlReadOnly,
       ...await getImageSize(currentImageDataUrlReadOnly)
     )
   );
 
-  await mkdirp(path.join("data", `${file_name}_src`));
+  await mkdirp(path.join(workDir, `${file_name}_src`));
 
   for (const sourceCropPair of configCroppersModified) {
     const [sourceKey, sourceCropRef] = sourceCropPair;
@@ -90,7 +96,8 @@ export default async function (options) {
       cropperMaskSrc: sourceCropRef.maskIsEnable ? sourceCropRef.maskUrl : null,
     });
     const fileName = `${file_name}_${sourceKey}.png`
-    const fileNameFull = path.join("data", `${file_name}_src`, fileName);
+    const fileNameFull = path.join(workDir, `${file_name}_src`, fileName);
+    mappingSourceKeyToSourcePath[sourceKey] = fileNameFull;
     fs.writeFileSync(
       fileNameFull, 
       await getImageBuffer(imageDataUrl, ...sourceCropRef.size)
@@ -99,7 +106,7 @@ export default async function (options) {
     if (sourceCropRef.copy && Array.isArray(sourceCropRef.copy) && !R.isEmpty(sourceCropRef.copy)) {
       const [toCopy] = sourceCropRef.copy;
       const { key: keyToCopy, size: sizeToCopy } = toCopy;
-      const fileNameFullToCopy = `./data/${file_name}_src/${file_name}_${keyToCopy}.png`;
+      const fileNameFullToCopy = `${workDir}/${file_name}_src/${file_name}_${keyToCopy}.png`;
       mappingSourceKeyToSourcePath[keyToCopy] = fileNameFullToCopy;
       fs.writeFileSync(
         fileNameFullToCopy,
@@ -112,38 +119,43 @@ export default async function (options) {
     const [key, destPathTemplate] = destination;
     const sourcePath = mappingSourceKeyToSourcePath[key];
     if (!sourcePath) {
+      console.warn('destination not found:', key, destPathTemplate);
       continue;
     }
     const destPath = path.join(
-      "data",
+      workDir,
       templateStringDoubleBraces(destPathTemplate, pathParams)
     );
     await mkdirp(path.dirname(destPath));
+    console.log('sourcePath, destPath', sourcePath, destPath)
     fs.symlinkSync(sourcePath, destPath);
   }
 
+  const outputFileName = `${outputName || file_name}.zip`;
+
   const write = vfs.src([
-    "./data/**/*",
+    `${workDir}/**/*`,
   ], {
-    base: "./data",
+    base: workDir,
     ...isUseSymlink && {
       resolveSymlinks: false // we want preserve symlink here
     }
   })
     .pipe(through2.obj((file, enc, next) => {
       if (file.isSymbolic()) {
+        console.info('resolve file._symlink', file._symlink);
         file._symlink = path.relative(path.dirname(file.path), file._symlink);
       }
       next(null, file);
     }))
-    .pipe(tar(`${file_name}.tar`))
-    .pipe(vfs.dest("./dist"));
+    .pipe(zip(outputFileName))
+    .pipe(vfs.dest(`./${outputName}`));
 
   await streamToPromise(write);
 
-  const buf = fs.readFileSync(`./dist/${file_name}.tar`);
+  const buf = fs.readFileSync(`./${outputName}/${outputFileName}`);
 
   const blob = new Blob([buf.buffer], {type: "application/octet-stream"});
 
-  return [blob, `${file_name}.tar`]
+  return [blob, outputFileName];
 }

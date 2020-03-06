@@ -6,12 +6,14 @@ import wildcard from 'wildcard';
 import RcUpload from 'rc-upload';
 
 // eslint-disable-next-line no-useless-escape
-const REGEXP_MIME_PART_SPLIT = /[\/\+\.]/;
 
 function isMimeMatch(target, pattern) {
-    const result = wildcard(pattern, target, REGEXP_MIME_PART_SPLIT);
+    if (target === pattern) {
+        return true;
+    }
+    const result = wildcard(pattern, [target]);
     // ensure that we have a valid mime type (should have two parts)
-    return result && result.length >= 2;
+    return result && result.length === 1;
 }
 
 function _readAsX(method, file) {
@@ -80,6 +82,10 @@ export function virtualFileFromDataUrl(dataUrl, filename) {
     return new VirtualFile(new File([u8arr], filename, { type: mimeOfDataUrl }));
 }
 
+export function virtualFileFromUint8Array(u8arr, filename) {
+    return new VirtualFile(new File([u8arr], filename, { type: mime.lookup(filename) }));
+}
+
 export default class SelectFile extends React.Component {
     render() {
         const {
@@ -105,13 +111,13 @@ export default class SelectFile extends React.Component {
             beforeUpload={async (_, files) => {
                 const virtualFiles = files.map(f => new VirtualFile(f));
 
-                const acceptMimeTypesArray = accept.split(',');
+                const acceptMimeTypesArray = accept.split(',').map(str => str.trim());
 
-                const virtualFilesInvalidType = virtualFiles.filter(vfile => {
-                    return acceptMimeTypesArray.every(type => !isMimeMatch(vfile.type, type));
+                const isPassedEveryVirtualFiles = virtualFiles.every(vfile => {
+                    return acceptMimeTypesArray.some(type => isMimeMatch(vfile.type, type));
                 });
 
-                if (R.isEmpty(virtualFilesInvalidType)) {
+                if (isPassedEveryVirtualFiles) {
                     await onSelectFiles({
                         files: virtualFiles.map(({ _file }) => _file),
                         virtualFiles,
@@ -119,7 +125,7 @@ export default class SelectFile extends React.Component {
                     });
                 } else {
                     await onSelectFilesWithError({
-                        virtualFilesInvalidType,
+                        // virtualFilesInvalidType,
                         onChange
                     });
                 }
