@@ -1,5 +1,8 @@
-import { render } from 'react-dom';
-import React from 'react';
-import App from './app';
+import { render } from "react-dom";
+import React from "react";
 
-render(<App/>, document.getElementById('app'));
+process.platform = "darwin";
+
+const App = require("./app").default;
+
+render(<App/>, document.getElementById("app"));

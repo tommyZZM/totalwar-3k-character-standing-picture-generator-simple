@@ -13,17 +13,22 @@ export default async function readArchiveFileTakeMajorConfig(virtualFile) {
 
   const targetFileName = path.basename(virtualFile.path);
 
-  const targetFileNameWithoutExtension = R.dropLast(1, targetFileName.split('.')).join('.')
+  const targetFileNameWithoutExtension = R.dropLast(1, targetFileName.split('.')).join('.');
 
   fs.writeFileSync(
     targetFileName,
     Buffer.from(await virtualFile.readAsArrayBuffer())
   );
 
-  await mkdirp('./out');
+  console.log('mkdirp start', process.platform);
+
+  await mkdirp('./out', { fs });
+
+  console.log('mkdirp done');
 
   const extract = zipSrc(targetFileName)
     .pipe(through2.obj((file, enc, next) => {
+      console.log('extract read file', file);
       if (file.stat.isDirectory()) {
         return next();
       }

@@ -188,17 +188,22 @@ export default class extends React.Component {
       const configWithCroppers = await loadConfigWithCroppers();
       const configOutput = await loadConfigOutput();
 
-      this._applyConfigWithCroppers(configWithCroppers);
-
       this.setState({
-        isInitialLoading: false,
-        configOutput,
-      });
+        configWithCroppersDefault: configWithCroppers
+      }, () => {
+        this._applyConfigWithCroppers(configWithCroppers);
+        this.setState({
+          isInitialLoading: false,
+          configOutput,
+        });
+      })
     })();
   }
   _applyConfigWithCroppers = (configWithCroppers, isResetSize = true) => {
     const { imagePosition = {}, croppers: configCroppers = [] } = configWithCroppers;
     const rect = this.refCropper.current.getBoundingClientRect();
+
+    const { croppers: configCroppersDefault = [] } = this.state.configWithCroppersDefault;
 
     // console.log('_applyConfigWithCroppers', configWithCroppers);
 
@@ -207,7 +212,13 @@ export default class extends React.Component {
     }
 
     this.setState({
-      configCroppers,
+      configCroppers: configCroppersDefault.map(([key, ref]) => {
+        const refFound = R.find(R.propEq(0, key), configCroppers);
+        return [key, {
+          ...refFound,
+          ...ref
+        }];
+      }),
       currentImagePosition: {
         ...this.state.currentImagePosition,
         ...R.pick(['x', 'y'], imagePosition),
@@ -332,14 +343,14 @@ export default class extends React.Component {
     });
   }
   _applyConfigFromArchiveFile = async (vf) => {
-    const {
-      targetFileNameWithoutExtension,
-      vfileSourceImage,
-      configWithCroppers
-    } = await readArchiveFileTakeMajorConfig(vf);
-    // ...
+    console.log('_applyConfigFromArchiveFile 1...', vf);
     this.setState({ isFilePicking: true });
     try {
+      const {
+        targetFileNameWithoutExtension,
+        vfileSourceImage,
+        configWithCroppers
+      } = await readArchiveFileTakeMajorConfig(vf);
       if (!vfileSourceImage || !configWithCroppers) {
         throw new Error('{{file}}.png and {{file}}.cropper.config.json not found');
       }
