@@ -20,15 +20,15 @@ export default async function readArchiveFileTakeMajorConfig(virtualFile) {
     Buffer.from(await virtualFile.readAsArrayBuffer())
   );
 
-  console.log('mkdirp start', process.platform);
+  // console.log('mkdirp start', process.platform);
 
   await mkdirp('./out', { fs });
 
-  console.log('mkdirp done');
+  // console.log('mkdirp done');
 
   const extract = zipSrc(targetFileName)
     .pipe(through2.obj((file, enc, next) => {
-      console.log('extract read file', file);
+      // console.log('extract read file', file);
       if (file.stat.isDirectory()) {
         return next();
       }

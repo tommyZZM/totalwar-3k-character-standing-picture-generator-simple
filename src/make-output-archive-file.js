@@ -15,6 +15,7 @@ import fs from "fs"
 import rmfr from "rmfr"
 import through2 from "through2";
 import getImageSize from "./utils/get-image-size";
+import pngMetaData from "png-metadata";
 
 async function getImageBuffer(src, width, height) {
   const dataUrl = await getImageResized(src, width, height);
@@ -116,7 +117,7 @@ export default async function (options) {
   }
 
   for (const destination of configOutput) {
-    const [key, destPathTemplate] = destination;
+    const [key, destPathTemplate, destOptions = {}] = destination;
     const sourcePath = mappingSourceKeyToSourcePath[key];
     if (!sourcePath) {
       console.warn('destination not found:', key, destPathTemplate);
@@ -127,8 +128,28 @@ export default async function (options) {
       templateStringDoubleBraces(destPathTemplate, pathParams)
     );
     await mkdirp(path.dirname(destPath));
-    console.log('sourcePath, destPath', sourcePath, destPath)
-    fs.symlinkSync(sourcePath, destPath);
+    // console.log('sourcePath, destPath', sourcePath, destPath)
+    // fs.symlinkSync(sourcePath, destPath);
+    if (destOptions.pngMeta) {
+      const srcBuffer = fs.readFileSync(sourcePath);
+      const metaChunks = pngMetaData.splitChunk(srcBuffer.toString('binary'));
+      let indexOfIHDR = null;
+      let metaChunksFiltered = metaChunks.filter((item, index) => {
+        if (item.type && R.isNil(indexOfIHDR)) {
+          indexOfIHDR = index;
+        }
+        return item.type === 'IHDR' || item.type === 'IDAT'
+      });
+      const newChunks = destOptions.pngMeta.map(({ type, data }) => {
+        return pngMetaData.createChunk(type, data)
+      });
+      metaChunksFiltered = R.insertAll(indexOfIHDR + 1, newChunks, metaChunksFiltered);
+      console.info('patched png meta', destPath, metaChunksFiltered);
+      var destBuffer = pngMetaData.joinChunk(metaChunksFiltered);
+      fs.writeFileSync(destPath, destBuffer, 'binary');
+    } else {
+      fs.symlinkSync(sourcePath, destPath);
+    }
   }
 
   const outputFileName = `${outputName || file_name}.zip`;

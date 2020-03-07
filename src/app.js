@@ -200,7 +200,7 @@ export default class extends React.Component {
     })();
   }
   _applyConfigWithCroppers = (configWithCroppers, isResetSize = true) => {
-    const { imagePosition = {}, croppers: configCroppers = [] } = configWithCroppers;
+    const { imagePosition = {}, croppers: configCroppersIn = [] } = configWithCroppers;
     const rect = this.refCropper.current.getBoundingClientRect();
 
     const { croppers: configCroppersDefault = [] } = this.state.configWithCroppersDefault;
@@ -211,14 +211,19 @@ export default class extends React.Component {
       throw new Error("croppers can't be null");
     }
 
+    const configCroppers = configCroppersDefault.map(([key, ref]) => {
+      const [_, refFound] = R.find(R.propEq(0, key), configCroppersIn) || [];
+      const isSameSize = R.equals(refFound.size, ref.size);
+      // console.log(isSameSize);
+      return [key, {
+        ...ref,
+        ...isSameSize && refFound,
+        copy: ref.copy,
+      }];
+    })
+
     this.setState({
-      configCroppers: configCroppersDefault.map(([key, ref]) => {
-        const refFound = R.find(R.propEq(0, key), configCroppers);
-        return [key, {
-          ...refFound,
-          ...ref
-        }];
-      }),
+      configCroppers,
       currentImagePosition: {
         ...this.state.currentImagePosition,
         ...R.pick(['x', 'y'], imagePosition),
@@ -343,7 +348,7 @@ export default class extends React.Component {
     });
   }
   _applyConfigFromArchiveFile = async (vf) => {
-    console.log('_applyConfigFromArchiveFile 1...', vf);
+    // console.log('_applyConfigFromArchiveFile 1...', vf);
     this.setState({ isFilePicking: true });
     try {
       const {
@@ -617,9 +622,10 @@ export default class extends React.Component {
                   }
                 }}
               >
-                <Button style={{ marginRight: 10 }}>导入...</Button>
+                <Button>导入...</Button>
               </SelectFile>
               <Button
+                style={{ marginLeft: 10 }}
                 disabled={!currentImageDataUrlReadOnly}
                 onClick={this._exportZippedPath}
               >导出</Button>
