@@ -212,7 +212,7 @@ export default class extends React.Component {
     }
 
     const configCroppers = configCroppersDefault.map(([key, ref]) => {
-      const [_, refFound] = R.find(R.propEq(0, key), configCroppersIn) || [];
+      const [_, refFound = {}] = R.find(R.propEq(0, key), configCroppersIn) || [];
       const isSameSize = R.equals(refFound.size, ref.size);
       // console.log(isSameSize);
       return [key, {
