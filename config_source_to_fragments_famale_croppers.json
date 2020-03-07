@@ -1,20 +1,8 @@
 {
     "croppers": [
-        ["composites_small_panel", {
-            "size": [333, 741],
-            "maskUrl": "./assets-mask-default/mask_vertical_soft_edge_500x500.png",
-            "maskLock": true,
-            "maskIsShow": false,
-            "maskPreview": true,
-            "maskIsEnable": true,
-            "maskPosition": {
-                "width": 1,
-                "height": 1
-            }
-        }],
         ["composites_large_panel", {
-            "size": [445, 1034],
-            "maskUrl": "./assets-mask-default/mask_vertical_soft_edge_500x500.png",
+            "size": [832, 1701],
+            "maskUrl": "./assets-mask-default/mask_composites_large_panel_832x1701.png",
             "maskLock": true,
             "maskIsShow": false,
             "maskPreview": true,
