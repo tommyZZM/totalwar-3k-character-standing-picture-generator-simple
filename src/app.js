@@ -417,6 +417,10 @@ export default class extends React.Component {
 
     const positionCurrentCropper = R.pick(["x", "y", "width", "height"], refCurrentCropper);
 
+    const mappingCurrentCropperPositionsValues = R.values(mappingCurrentCropperPositions);
+
+    const isSomeCropperShowingRef = mappingCurrentCropperPositionsValues.some(item => item.isShowRef);
+
     // console.log("refCurrentCropper?.maskPosition", refCurrentCropper?.maskPosition);
 
     return <Spin wrapperClassName={"spin-fill"} spinning={isInitialLoading || isFilePicking}>
@@ -647,7 +651,7 @@ export default class extends React.Component {
             <div style={{ marginBottom: 10 }}>
               <SelectFile
                 accept={'application/json,application/zip'}
-                onSelectFilesWithError={() => message.error('所选文件格式不正确')}
+                onSelectFilesWithError={() => message.error('所选文件格式不正确, 导入已导出的zip或者json')}
                 onSelectFiles={async ({ virtualFiles }) => {
                   const [vf] = virtualFiles;
                   const jsonString = await vf.readAsText();
@@ -666,6 +670,24 @@ export default class extends React.Component {
                 disabled={!currentImageDataUrlReadOnly}
                 onClick={this._exportZippedPath}
               >导出</Button>
+            </div>
+            <div style={{ marginBottom: 10 }}>
+              <Button
+                disabled={!currentImageDataUrlReadOnly}
+                onClick={(e) => {
+                  console.log(
+                    R.map(ref => ({
+                      ...ref,
+                      isShowRef: !isSomeCropperShowingRef
+                    }), mappingCurrentCropperPositions)
+                  );
+                  this.setState({
+                    mappingCurrentCropperPositions: R.map(ref => ({
+                      ...ref,
+                      isShowRef: !isSomeCropperShowingRef
+                    }), mappingCurrentCropperPositions)
+                  });
+                }}>{isSomeCropperShowingRef ? '隐藏所有参考位置' : '显示所有参考位置'}</Button>
             </div>
             <div style={{ marginBottom: 10 }}>
               <b style={{ marginRight: 10 }}>操作对象:</b>
