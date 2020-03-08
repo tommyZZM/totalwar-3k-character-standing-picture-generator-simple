@@ -274,6 +274,7 @@ export default class extends React.Component {
             isShowRef: true,
             maskUrl: ref.maskUrl,
             // maskLock: true, //ref.maskLock,
+            maskPreview: true,
             maskIsShow: true, // Boolean(ref.maskUrl),
             ...R.pick([
               // 'maskLock',
