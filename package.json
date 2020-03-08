@@ -51,6 +51,7 @@
     "axios": "^0.19.2",
     "buffer": "^5.4.3",
     "file-saver": "^2.0.2",
+    "github-fork-ribbon-css": "^0.2.3",
     "glob": "^7.1.6",
     "gulp-tar": "^3.1.0",
     "gulp-vinyl-zip": "^2.2.0",

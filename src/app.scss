@@ -1,3 +1,9 @@
+@import "../node_modules/github-fork-ribbon-css/gh-fork-ribbon.css";
+
+.github-fork-ribbon:before {
+  background-color: #333;
+}
+
 html,
 body {
   height: 100%;
@@ -63,31 +69,45 @@ body {
             opacity: 1;
             pointer-events: initial;
 
+            .crop-item .crop-item-frame {
+              border-color: rgba(#f39c12, .3);
+            }
+
             .name {
               opacity: 0.2;
             }
+          }
 
-            .crop-item {
-              border-color: #f39c12;
+          &.editiong-cropper-flag-1 {
+            overflow: hidden;
+            .crop-item .crop-item-frame {
+              border-color: rgba(#f39c12, 1);
             }
+            .mask-wrap .mask {
+              pointer-events: none;
+            }
+          }
 
-            .mask {
+          &.editiong-cropper-flag-2 {
+            overflow: visible;
+            .mask-wrap .mask {
               border: 1px dashed rgba(#e74c3c, 1);
-              pointer-events: initial;
-              opacity: 1;
             }
           }
 
           .crop-item {
             position: relative;
-            border: 1px dashed rgba(#d9d9d9, 0.2);
-            border-radius: 2px;
-            overflow: hidden;
             height: 100%;
-          }
-
-          &:hover {
-            border-color: #e74c3c;
+            .crop-item-frame {
+              position: absolute;
+              top: 0;
+              right: 0;
+              width: 100%;
+              height: 100%;
+              border: 1px dashed rgba(#d9d9d9, 0.2);
+              border-radius: 2px;
+              overflow: hidden;
+            }
           }
 
           .name {
@@ -124,26 +144,23 @@ body {
             width: 0;
             height: 0;
 
-            &.is-mask-show-true {
-              .mask-img {
-                opacity: 0.76;
-              }
-            }
+            // &.is-mask-show-true {
+            //   .mask-img {
+            //     opacity: 0.76;
+            //   }
+            // }
 
-            &.is-mask-lock-true {
-              pointer-events: none;
-
-              .mask {
-                pointer-events: none !important;
-              }
-
-              &.is-mask-show-true {
-                .mask-img {
-                  opacity: 0.3;
-                }
-              }
-
-            }
+            // &.is-mask-lock-true {
+            //   pointer-events: none;
+            //   .mask {
+            //     pointer-events: none !important;
+            //   }
+            //   &.is-mask-show-true {
+            //     .mask-img {
+            //       opacity: 0.3;
+            //     }
+            //   }
+            // }
           }
 
           .mask {
@@ -161,7 +178,7 @@ body {
               width: 100%;
               height: 100%;
               background-size: 100% 100%;
-              opacity: 0;
+              opacity: 0.76;
               pointer-events: none;
             }
           }

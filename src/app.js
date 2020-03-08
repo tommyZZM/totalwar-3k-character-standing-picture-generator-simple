@@ -8,7 +8,8 @@ import {
   BarcodeOutlined,
   DeleteOutlined,
   MinusCircleOutlined,
-  CheckCircleOutlined
+  CheckCircleOutlined,
+  ExpandOutlined
 } from "@ant-design/icons";
 import loadConfigWithCroppers from "./load-assets/load-config-croppers"
 import { Rnd } from "react-rnd"
@@ -41,6 +42,17 @@ function getCropperInitialPosition(originWidth, originHeight, containerWidth, co
 const REGEX_VAILD_FILENAME = () => /^[\w\-_\$]+$/;
 
 const pathParamsStorageKey = key => `placeholder_path_params_${key}`
+
+const reactRndEnableResizing = boo => ({
+  bottom: boo,
+  bottomLeft: boo,
+  bottomRight: boo,
+  left: boo,
+  right: boo,
+  top: boo,
+  topLeft: boo,
+  topRightboo: boo
+})
 
 class OutputModalContent extends React.Component {
   constructor(props) {
@@ -177,7 +189,9 @@ export default class extends React.Component {
       configOutput: null,
       currentImageDataUrlReadOnly: null,
       currentImagePosition: {},
-      mappingCurrentCropperPositions: {}
+      mappingCurrentCropperPositions: {},
+      flagOperationTarget: 0,
+      mappingCurrentCropperMaskPositionsDefault: {}
     };
     this.refImage = React.createRef();
     this.refCropper = React.createRef();
@@ -219,6 +233,7 @@ export default class extends React.Component {
         ...ref,
         ...isSameSize && refFound,
         copy: ref.copy,
+        maskPositionDefault: { ...ref.maskPosition }
       }];
     })
 
@@ -229,6 +244,16 @@ export default class extends React.Component {
         ...R.pick(['x', 'y'], imagePosition),
         ...isResetSize && R.pick(['width', 'height'], imagePosition)
       },
+      mappingCurrentCropperMaskPositionsDefault: configCroppers.reduce((result, [key, ref]) => {
+        return {
+          ...result,
+          [key]: {
+            x: 0,
+            y: 0,
+            ...ref.maskPositionDefault
+          }
+        }
+      }, {}),
       mappingCurrentCropperPositions: configCroppers.reduce((result, [key, ref]) => {
         const [originWidth, originHeight] = ref.size;
         const {
@@ -246,11 +271,12 @@ export default class extends React.Component {
             size: ref.size,
             ...positionInitial,
             ...R.filter(R.compose(R.not, R.isNil), R.pick(['x', 'y', 'width', 'height'], ref)),
+            isShowRef: true,
             maskUrl: ref.maskUrl,
-            maskLock: true, //ref.maskLock,
+            // maskLock: true, //ref.maskLock,
             maskIsShow: true, // Boolean(ref.maskUrl),
             ...R.pick([
-              'maskLock',
+              // 'maskLock',
               'maskIsShow',
               'maskPreview',
               'isShowRef',
@@ -382,7 +408,9 @@ export default class extends React.Component {
       currentImagePosition,
       mappingCurrentCropperPositions,
       configCroppers = [],
-      currentCropperkey
+      currentCropperkey,
+      flagOperationTarget,
+      mappingCurrentCropperMaskPositionsDefault
     } = this.state;
 
     const refCurrentCropper = mappingCurrentCropperPositions[currentCropperkey] || {};
@@ -398,8 +426,8 @@ export default class extends React.Component {
             {
               currentImageDataUrlReadOnly ?
                 <Rnd
-                  enableResizing={refCurrentCropper?.maskLock}
-                  disableDragging={refCurrentCropper?.maskLock}
+                  enableResizing={reactRndEnableResizing(flagOperationTarget === 0)}
+                  disableDragging={flagOperationTarget !== 0}
                   lockAspectRatio={true}
                   size={{ ...currentImagePosition }}
                   position={{ ...currentImagePosition }}
@@ -480,19 +508,17 @@ export default class extends React.Component {
               const [originWidth, originHeight] = ref.size;
               const refPatch = mappingCurrentCropperPositions[key];
               const position = R.pick(["x", "y", "width", "height"], refPatch);
-              const isEditing = this.state.currentCropperkey === key;
+              const isBeingSelected = this.state.currentCropperkey === key;
               const maskPosition = refPatch?.maskPosition;
               // console.log("maskPosition", maskPosition);
+              // console.log('isBeingSelected', isBeingSelected);
               return <Rnd
                 key={key + index}
-                className={`rnd-crop-item editing-${!!isEditing}`}
-                style={{
-                  ...!refPatch.maskLock && {
-                    pointerEvents: "none"
-                  }
-                }}
-                // enableResizing={isEditing}
-                // disableDragging={!isEditing}
+                className={`rnd-crop-item editing-${!!isBeingSelected} ` + 
+                  `editiong-cropper-flag-${isBeingSelected ? flagOperationTarget : null}`
+                }
+                enableResizing={reactRndEnableResizing(flagOperationTarget === 1)}
+                disableDragging={flagOperationTarget !== 1}
                 lockAspectRatio={true}
                 size={{
                   width: originWidth,
@@ -526,24 +552,35 @@ export default class extends React.Component {
                 }}
               >
                 <div className={`crop-item`}>
-                  <div className={"name"}>{ref.name || key}</div>
-                  <div
-                    className={"background-ref"}
-                    style={{
-                      backgroundImage: `url(./assets-background-ref/${key}.png)`,
-                      opacity: refPatch.isShowRef ? 0.66 : 0
-                    }}
-                  />
+                  <div className={`crop-item-frame`}>
+                    <div className={"name"}>{ref.name || key}</div>
+                    <div
+                      className={"background-ref"}
+                      style={{
+                        backgroundImage: `url(./assets-background-ref/${key}.png)`,
+                        opacity: refPatch.isShowRef ? 0.66 : 0
+                      }}
+                    />
+                  </div>
                   {refPatch.maskUrl && refPatch.maskIsEnable && <div
-                    className={`mask-wrap ` +
+                    className={`mask-wrap ` + ""
                       // `has-mask-${Boolean(refPatch.maskUrl)} ` +
-                      `is-mask-show-${Boolean(refPatch.maskIsShow)} ` +
-                      `is-mask-lock-${Boolean(refPatch.maskLock)} `
+                      // `is-mask-show-${Boolean(refPatch.maskIsShow)} ` +
+                      // `is-mask-lock-${Boolean(refPatch.maskLock)} `
+                      // `is-mask-show-true is-mask-lock-false`
                     }
                     onMouseDown={stopPropagation}
                   >
                     <Rnd
+                      enableResizing={reactRndEnableResizing(flagOperationTarget === 2)}
+                      disableDragging={flagOperationTarget !== 2}
                       className={`mask `}
+                      style={{
+                        ...flagOperationTarget === 2 && isBeingSelected && {
+                          opacity: 1,
+                          pointerEvents: 'initial'
+                        }
+                      }}
                       size={{
                         width: position.width * maskPosition.width,
                         height: position.height * maskPosition.height,
@@ -631,15 +668,31 @@ export default class extends React.Component {
               >导出</Button>
             </div>
             <div style={{ marginBottom: 10 }}>
+              <b style={{ marginRight: 10 }}>操作对象:</b>
+              <Radio.Group disabled={!currentImageDataUrlReadOnly} onChange={(e) => {
+                this.setState({
+                  flagOperationTarget: e.target.value
+                })
+              }} buttonStyle="solid" value={flagOperationTarget}>
+                <Radio.Button value={0}>图片</Radio.Button>
+                <Radio.Button value={1}>剪裁</Radio.Button>
+                <Radio.Button value={2}>蒙层</Radio.Button>
+              </Radio.Group>
+            </div>
+            <div style={{ marginBottom: 10 }}>
               <Table
                 rowKey={item => item[0]}
                 onRow={(record) => {
                   return {
                     onClick: () => {
+                      if (!currentImageDataUrlReadOnly) {
+                        return null;
+                      }
                       const [key] = record;
-                      const isChecked = key === this.state.currentCropperkey;
+                      const isCheckedLast = key === this.state.currentCropperkey;
                       this.setState({
-                        currentCropperkey: isChecked ? null : key
+                        currentCropperkey: isCheckedLast ? null : key,
+                        flagOperationTarget: isCheckedLast ? 0 : 1
                       })
                     }
                   }
@@ -707,10 +760,8 @@ export default class extends React.Component {
                                 </Tooltip>
                               </SelectFile>
                             </span>
-                            <span style={{
-                              marginRight: 5
-                            }} onClick={stopPropagation}>
-                              <div><Checkbox
+                            <span style={{ marginRight: 5 }} onClick={stopPropagation}>
+                              {/* <div><Checkbox
                                 disabled={!isChecked}
                                 checked={!refPatch.maskLock}
                                 onChange={(e) => {
@@ -725,7 +776,7 @@ export default class extends React.Component {
                                     }
                                   });
                                 }}
-                              >蒙层移动</Checkbox></div>
+                              >蒙层移动</Checkbox></div> */}
                               <div><Checkbox
                                 disabled={!isChecked}
                                 checked={refPatch.maskPreview}
@@ -741,6 +792,32 @@ export default class extends React.Component {
                                   });
                                 }}
                               >剪裁预览</Checkbox></div>
+                            </span>
+                            <span style={{ marginRight: 5 }} onClick={stopPropagation}>
+                              <Tooltip title={"重置蒙层位置"}>
+                                <Button
+                                  // disabled={!refPatch.maskUrl && !isChecked}
+                                  // disabled={refPatch.maskIsEnable}
+                                  onClick={() => {
+                                    const maskPositionDefault = mappingCurrentCropperMaskPositionsDefault[key];
+                                    // console.log('maskPositionDefault', maskPositionDefault);
+                                    this.setState({
+                                      mappingCurrentCropperPositions: {
+                                        ...mappingCurrentCropperPositions,
+                                        [key]: {
+                                          ...refPatch,
+                                          maskPosition: {
+                                            ...refPatch.maskPosition,
+                                            ...maskPositionDefault,
+                                          }
+                                        }
+                                      }
+                                    });
+                                  }}
+                                  size={"small"}
+                                  icon={<ExpandOutlined />}
+                                />
+                              </Tooltip>
                             </span>
                             <span onClick={stopPropagation}>
                               <Tooltip
