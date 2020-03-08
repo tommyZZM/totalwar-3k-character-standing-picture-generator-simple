@@ -67,7 +67,6 @@ body {
 
           &.editing-true {
             opacity: 1;
-            pointer-events: initial;
 
             .crop-item .crop-item-frame {
               border-color: rgba(#f39c12, .3);
@@ -80,6 +79,7 @@ body {
 
           &.editiong-cropper-flag-1 {
             overflow: hidden;
+            pointer-events: initial;
             .crop-item .crop-item-frame {
               border-color: rgba(#f39c12, 1);
             }
@@ -90,6 +90,7 @@ body {
 
           &.editiong-cropper-flag-2 {
             overflow: visible;
+            pointer-events: initial;
             .mask-wrap .mask {
               border: 1px dashed rgba(#e74c3c, 1);
             }
