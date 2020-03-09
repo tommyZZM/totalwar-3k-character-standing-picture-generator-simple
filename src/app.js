@@ -1,6 +1,6 @@
 import * as R from "ramda"
 import React from "react"
-import { Button, Spin, Upload, Table, Radio, Checkbox, Tooltip, Modal, Input, message } from "antd"
+import { Button, Spin, Upload, Table, Radio, Checkbox, Tooltip, Modal, Input, message, Select } from "antd"
 import SelectFile, { VirtualFile } from "./components/SelectFile"
 import {
   PlusCircleOutlined,
@@ -11,10 +11,10 @@ import {
   CheckCircleOutlined,
   ExpandOutlined
 } from "@ant-design/icons";
-import loadConfigWithCroppers from "./load-assets/load-config-croppers"
+import { loadConfigWithCroppersTiny, loadConfigWithCroppersFull } from "./load-assets/load-config-croppers"
 import { Rnd } from "react-rnd"
 import CanvasComposites from "./components/CanvasComposites"
-import loadConfigOutput from "./load-assets/load-config-output"
+import { loadConfigOutputTiny, loadConfigOutputFull } from "./load-assets/load-config-output"
 import makeOutputArchiveFile from "./make-output-archive-file"
 import { saveAs } from 'file-saver'
 import getImageSize from "./utils/get-image-size";
@@ -42,6 +42,8 @@ function getCropperInitialPosition(originWidth, originHeight, containerWidth, co
 const REGEX_VAILD_FILENAME = () => /^[\w\-_\$]+$/;
 
 const pathParamsStorageKey = key => `placeholder_path_params_${key}`
+
+const stateStorageKey = key => `state_${key}`
 
 const reactRndEnableResizing = boo => ({
   bottom: boo,
@@ -180,6 +182,11 @@ class OutputModalContent extends React.Component {
   }
 }
 
+const CONFIGS_SOURCE = [
+  [loadConfigWithCroppersTiny, loadConfigOutputTiny],
+  [loadConfigWithCroppersFull, loadConfigOutputFull]
+]
+
 export default class extends React.Component {
   constructor(props) {
     super(props);
@@ -191,27 +198,52 @@ export default class extends React.Component {
       currentImagePosition: {},
       mappingCurrentCropperPositions: {},
       flagOperationTarget: 0,
-      mappingCurrentCropperMaskPositionsDefault: {}
+      mappingCurrentCropperMaskPositionsDefault: {},
+      currentSelectConfigValue: sessionStorage.getItem(stateStorageKey('configValue')) || 0
     };
     this.refImage = React.createRef();
     this.refCropper = React.createRef();
   }
   componentDidMount() {
     (async () => {
-      this.setState({ isInitialLoading: true });
-      const configWithCroppers = await loadConfigWithCroppers();
-      const configOutput = await loadConfigOutput();
-
-      this.setState({
-        configWithCroppersDefault: configWithCroppers
-      }, () => {
-        this._applyConfigWithCroppers(configWithCroppers);
-        this.setState({
-          isInitialLoading: false,
-          configOutput,
-        });
-      })
+      const lastConfigValue = sessionStorage.getItem(stateStorageKey('configValue')) || 0;
+      await this._reloadConfig(lastConfigValue, true);
     })();
+  }
+  _reloadConfig = async (value = 0, dontAskConfirm = false) => {
+    !dontAskConfirm && await new Promise((resolve, reject) => {
+      Modal.confirm({
+        title: '加载新的剪裁配置会清空当前的编辑区域',
+        content: '要加载新的剪裁配置吗?',
+        onOk: () => { resolve(); },
+        onCancel: () => { reject(); }
+      })
+    });
+
+    const [loadConfigWithCroppers, loadConfigOutput] = CONFIGS_SOURCE[value];
+    this.setState({ isInitialLoading: true, currentSelectConfigValue: value });
+    const configWithCroppers = await loadConfigWithCroppers();
+    const configOutput = await loadConfigOutput();
+
+    this.setState({
+      configWithCroppersDefault: configWithCroppers,
+      configCroppers: [],
+      currentCropperkey: null,
+      configOutput: null,
+      currentCropperkey: null,
+      currentImageDataUrlReadOnly: null,
+      currentImagePosition: {},
+      mappingCurrentCropperPositions: {},
+      flagOperationTarget: 0,
+      mappingCurrentCropperMaskPositionsDefault: {},
+    }, () => {
+      this._applyConfigWithCroppers(configWithCroppers);
+      this.setState({
+        isInitialLoading: false,
+        configOutput,
+      });
+      sessionStorage.setItem(stateStorageKey('configValue'), value);
+    })
   }
   _applyConfigWithCroppers = (configWithCroppers, isResetSize = true) => {
     const { imagePosition = {}, croppers: configCroppersIn = [] } = configWithCroppers;
@@ -635,6 +667,17 @@ export default class extends React.Component {
         </div>
         <div className={"right-sider-bar"}>
           <React.Fragment>
+            <div style={{ marginTop: 20, marginBottom: 10 }}>
+              <b style={{ marginRight: 10 }}>剪裁配置预设:</b>
+              <Select 
+                // disabled={true} 
+                defaultValue={`${this.state.currentSelectConfigValue}`}
+                onChange={value => this._reloadConfig(value, false)}
+              >
+                <Option value={'0'}>TotalWar:ThreeKingDom(Tiny)</Option>
+                <Option value={'1'}>TotalWar:ThreeKingDom(Full)</Option>
+              </Select>
+            </div>
             <div style={{ marginBottom: 10 }}>
               <SelectFile accept={"image/*"}
                 onSelectFilesWithError={() => message.error('仅支持图片文件')}

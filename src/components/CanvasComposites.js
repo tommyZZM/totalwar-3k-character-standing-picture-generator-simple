@@ -19,8 +19,10 @@ async function getImageLoaded(src) {
 
 const SHARED_CANVAS_MASK = document.createElement("canvas");
 const SHARED_CTX_CANVAS_MASK = SHARED_CANVAS_MASK.getContext("2d");
+
 const SHARED_CANVAS_OUTPUT = document.createElement("canvas");
 const SHARED_CTX_CANVAS_OUTPUT = SHARED_CANVAS_OUTPUT.getContext("2d");
+SHARED_CTX_CANVAS_OUTPUT.imageSmoothingEnabled = false;
 
 export async function getImageResized(src, width, height) {
   const sourceImg = await getImageLoaded(src);

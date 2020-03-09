@@ -1,0 +1,58 @@
+{
+    "croppers": [
+        ["composites_large_panel", {
+            "size": [832, 1701],
+            "maskUrl": "./assets-mask-default/mask_composites_large_panel_832x1701.png",
+            "maskLock": true,
+            "maskIsShow": false,
+            "maskPreview": true,
+            "maskIsEnable": true,
+            "maskPosition": {
+                "width": 1,
+                "height": 1
+            }
+        }],
+        ["stills_bobbleheads_faces", {
+            "size": [84, 138],
+            "maskUrl": "./assets-mask-default/mask_stills_bobbleheads_faces_84x138.png",
+            "maskLock": true,
+            "maskIsShow": false,
+            "maskPreview": true,
+            "maskIsEnable": true,
+            "maskPosition": {
+                "width": 1,
+                "height": 1
+            }
+        }],
+        ["stills_halfbody_large_faces_large", {
+            "size": [499, 400],
+            "copy": [{
+                "key": "stills_halfbody_large_faces",
+                "size": [312, 250]
+            }]
+        }],
+        ["stills_mini_faces_large", {
+            "size": [48, 48],
+            "maskUrl": "./assets-mask-default/mask_circle_300x300.png",
+            "maskLock": true,
+            "maskIsShow": false,
+            "maskPreview": true,
+            "maskIsEnable": true,
+            "maskPosition": {
+                "width": 1,
+                "height": 1
+            },
+            "copy": [{
+                "key": "stills_mini_faces",
+                "size": [30, 30]
+            }]
+        }],
+        ["stills_unitcards_faces_large", {
+            "size": [131, 435],
+            "copy": [{
+                "key": "stills_unitcards_faces",
+                "size": [82, 272]
+            }]
+        }]
+    ]
+}
