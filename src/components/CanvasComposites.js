@@ -22,7 +22,7 @@ const SHARED_CTX_CANVAS_MASK = SHARED_CANVAS_MASK.getContext("2d");
 
 const SHARED_CANVAS_OUTPUT = document.createElement("canvas");
 const SHARED_CTX_CANVAS_OUTPUT = SHARED_CANVAS_OUTPUT.getContext("2d");
-SHARED_CTX_CANVAS_OUTPUT.imageSmoothingEnabled = false;
+// SHARED_CTX_CANVAS_OUTPUT.imageSmoothingEnabled = false;
 
 export async function getImageResized(src, width, height) {
   const sourceImg = await getImageLoaded(src);
@@ -57,7 +57,7 @@ async function drawComposites(options) {
   if (maskImg) {
     ctxMask.clearRect(0, 0, canvasWidth, canvasHeight);
     ctxMask.strokeStyle = "none";
-    ctxMask.drawImage(maskImg, ...maskPositionToDraw);
+    ctxMask.drawImage(maskImg, ...maskPositionToDraw.map(num => parseInt(num)));
 
     const [x, y, w, h] = maskPositionToDraw;
     const imageDataMask = ctxMask.getImageData(
