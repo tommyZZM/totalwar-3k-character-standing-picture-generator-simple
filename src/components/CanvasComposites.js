@@ -1,5 +1,16 @@
 import React from "react";
 
+function getPixelRatio(context) {
+    var backingStore = context.backingStorePixelRatio ||
+          context.webkitBackingStorePixelRatio ||
+          context.mozBackingStorePixelRatio ||
+          context.msBackingStorePixelRatio ||
+          context.oBackingStorePixelRatio ||
+          context.backingStorePixelRatio || 1;
+
+    return (window.devicePixelRatio || 1) / backingStore;
+};
+
 async function getImageLoaded(src) {
   if (!src) {
     return null;
@@ -29,11 +40,15 @@ export async function getImageResized(src, width, height) {
 
   SHARED_CANVAS_OUTPUT.setAttribute("width", width);
   SHARED_CANVAS_OUTPUT.setAttribute("height", height);
-  SHARED_CANVAS_OUTPUT.style.cssText = "background: transparent";
+  SHARED_CANVAS_OUTPUT.style.cssText = `background: transparent; width: ${width / 2}px; height: ${height / 2}`;
 
   SHARED_CTX_CANVAS_OUTPUT.globalCompositeOperation = 'source-over';
   SHARED_CTX_CANVAS_OUTPUT.clearRect(0, 0, width, height);
-  SHARED_CTX_CANVAS_OUTPUT.drawImage(sourceImg, 0, 0, width, height);
+  SHARED_CTX_CANVAS_OUTPUT.drawImage(
+    sourceImg, 0, 0, 
+    width * getPixelRatio(SHARED_CTX_CANVAS_OUTPUT),
+    height * getPixelRatio(SHARED_CTX_CANVAS_OUTPUT),
+  );
 
   return SHARED_CANVAS_OUTPUT.toDataURL();
 }
@@ -82,7 +97,8 @@ async function drawComposites(options) {
     ctx.drawImage(canvasMask, 0, 0, canvasWidth, canvasHeight);
     ctx.globalCompositeOperation = 'source-in';
   }
-  ctx.drawImage(sourceImg, ...imagePositionToDraw);
+  const [xImage, yImage, wImage, hImage] = imagePositionToDraw;
+  ctx.drawImage(sourceImg, xImage, yImage, wImage * getPixelRatio(ctx), hImage * getPixelRatio(ctx));
   ctx.globalCompositeOperation = 'source-over';
 }
 
@@ -96,11 +112,11 @@ export async function getImageCompositesBy(options) {
 
   SHARED_CANVAS_MASK.setAttribute("width", canvasWidth);
   SHARED_CANVAS_MASK.setAttribute("height", canvasHeight);
-  SHARED_CANVAS_MASK.style.cssText = "background: transparent";
+  SHARED_CANVAS_MASK.style.cssText = `background: transparent; width: ${canvasWidth / 2}px; height: ${canvasHeight / 2}`;
 
   SHARED_CANVAS_OUTPUT.setAttribute("width", canvasWidth);
   SHARED_CANVAS_OUTPUT.setAttribute("height", canvasHeight);
-  SHARED_CANVAS_OUTPUT.style.cssText = "background: transparent";
+  SHARED_CANVAS_OUTPUT.style.cssText = `background: transparent; width: ${canvasWidth / 2}px; height: ${canvasHeight / 2}`;
 
   await drawComposites({
     ...options,
