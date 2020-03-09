@@ -11,10 +11,10 @@ import {
   CheckCircleOutlined,
   ExpandOutlined
 } from "@ant-design/icons";
-import { loadConfigWithCroppersTiny, loadConfigWithCroppersFull } from "./load-assets/load-config-croppers"
+import { loadConfigWithCroppersSpecial, loadConfigWithCroppersFull } from "./load-assets/load-config-croppers"
 import { Rnd } from "react-rnd"
 import CanvasComposites from "./components/CanvasComposites"
-import { loadConfigOutputTiny, loadConfigOutputFull } from "./load-assets/load-config-output"
+import { loadConfigOutputSpecial, loadConfigOutputFull } from "./load-assets/load-config-output"
 import makeOutputArchiveFile from "./make-output-archive-file"
 import { saveAs } from 'file-saver'
 import getImageSize from "./utils/get-image-size";
@@ -183,8 +183,8 @@ class OutputModalContent extends React.Component {
 }
 
 const CONFIGS_SOURCE = [
-  [loadConfigWithCroppersTiny, loadConfigOutputTiny],
-  [loadConfigWithCroppersFull, loadConfigOutputFull]
+  [loadConfigWithCroppersSpecial, loadConfigOutputSpecial],
+  [loadConfigWithCroppersFull, loadConfigOutputFull],
 ]
 
 export default class extends React.Component {
@@ -674,8 +674,8 @@ export default class extends React.Component {
                 defaultValue={`${this.state.currentSelectConfigValue}`}
                 onChange={value => this._reloadConfig(value, false)}
               >
-                <Option value={'0'}>TotalWar:ThreeKingDom(Tiny)</Option>
-                <Option value={'1'}>TotalWar:ThreeKingDom(Full)</Option>
+                <Option value={'0'}>TotalWar:ThreeKingDom(传奇武将)</Option>
+                <Option value={'1'}>TotalWar:ThreeKingDom(大众脸武将)</Option>
               </Select>
             </div>
             <div style={{ marginBottom: 10 }}>
