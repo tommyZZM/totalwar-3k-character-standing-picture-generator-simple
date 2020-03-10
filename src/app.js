@@ -282,9 +282,12 @@ export default class extends React.Component {
         return {
           ...result,
           [key]: {
-            x: 0,
-            y: 0,
-            ...ref.maskPositionDefault
+            maskUrl: ref.maskUrl,
+            maskPosition: {
+              x: 0,
+              y: 0,
+              ...ref.maskPositionDefault
+            }
           }
         }
       }, {}),
@@ -881,9 +884,12 @@ export default class extends React.Component {
                                         ...mappingCurrentCropperPositions,
                                         [key]: {
                                           ...refPatch,
+                                          ...maskPositionDefault.maskUrl && {
+                                            maskUrl: maskPositionDefault.maskUrl,
+                                          },
                                           maskPosition: {
                                             ...refPatch.maskPosition,
-                                            ...maskPositionDefault,
+                                            ...maskPositionDefault.maskPosition,
                                           }
                                         }
                                       }
