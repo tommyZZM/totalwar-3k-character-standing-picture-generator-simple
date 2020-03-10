@@ -2,7 +2,7 @@
     "croppers": [
         ["composites_large_panel", {
             "size": [1600, 1500],
-            "maskUrl": "./assets-mask-default/mask_soft_edge_300x300.png",
+            "maskUrl": "./assets-mask-default/mask_soft_edge_1600.png",
             "maskPreview": true,
             "maskPosition": {
                 "width": 1,
