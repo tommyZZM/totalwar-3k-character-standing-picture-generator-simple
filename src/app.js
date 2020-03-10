@@ -11,7 +11,7 @@ import {
   CheckCircleOutlined,
   ExpandOutlined
 } from "@ant-design/icons";
-import { loadConfigWithCroppersSpecial, loadConfigWithCroppersFull } from "./load-assets/load-config-croppers"
+import { loadConfigWithCroppersFull } from "./load-assets/load-config-croppers"
 import { Rnd } from "react-rnd"
 import CanvasComposites from "./components/CanvasComposites"
 import { loadConfigOutputSpecial, loadConfigOutputFull } from "./load-assets/load-config-output"
@@ -183,7 +183,7 @@ class OutputModalContent extends React.Component {
 }
 
 const CONFIGS_SOURCE = [
-  [loadConfigWithCroppersSpecial, loadConfigOutputSpecial],
+  [loadConfigWithCroppersFull, loadConfigOutputSpecial],
   [loadConfigWithCroppersFull, loadConfigOutputFull],
 ]
 
@@ -265,6 +265,8 @@ export default class extends React.Component {
         ...ref,
         ...isSameSize && refFound,
         copy: ref.copy,
+        redraw: ref.redraw,
+        size: ref.size,
         maskPositionDefault: { ...ref.maskPosition }
       }];
     })
@@ -481,6 +483,8 @@ export default class extends React.Component {
                     this.setState({
                       currentImagePosition: {
                         ...currentImagePosition,
+                        // x: position.x,
+                        // y: position.y,
                         width: ref.offsetWidth,
                         height: ref.offsetHeight,
                       }
@@ -533,6 +537,7 @@ export default class extends React.Component {
                 positionSourceImage={R.pick(["x", "y", "width", "height"], currentImagePosition)}
                 positionCropper={positionCurrentCropper}
                 cropperMaskSrc={refCurrentCropper.maskIsEnable ? refCurrentCropper.maskUrl : null}
+                sizeCropper={refCurrentCropper.size}
                 positionPercentageCropperMask={{
                   xPercentage: refCurrentCropper?.maskPosition.x,
                   yPercentage: refCurrentCropper?.maskPosition.y,
@@ -575,12 +580,14 @@ export default class extends React.Component {
                     }
                   });
                 }}
-                onResize={(e, direction, ref, delta) => {
+                onResize={(e, direction, ref, delta, position) => {
                   this.setState({
                     mappingCurrentCropperPositions: {
                       ...mappingCurrentCropperPositions,
                       [key]: {
                         ...refPatch,
+                        // x: position.x,
+                        // y: position.y,
                         width: ref.offsetWidth,
                         height: ref.offsetHeight,
                       }
@@ -641,7 +648,7 @@ export default class extends React.Component {
                           }
                         });
                       }}
-                      onResize={(e, direction, ref, delta) => {
+                      onResize={(e, direction, ref, delta, thatPostion) => {
                         this.setState({
                           mappingCurrentCropperPositions: {
                             ...mappingCurrentCropperPositions,
@@ -649,6 +656,8 @@ export default class extends React.Component {
                               ...refPatch,
                               maskPosition: {
                                 ...maskPosition,
+                                // x: thatPostion.x / position.width,
+                                // y: thatPostion.y / position.height,
                                 width: ref.offsetWidth / position.width,
                                 height: ref.offsetHeight / position.height,
                               }

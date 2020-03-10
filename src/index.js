@@ -1,6 +1,6 @@
 import { render } from "react-dom";
 import React from "react";
-import "./polyfill/hidpi-canvas";
+// import "./polyfill/hidpi-canvas";
 
 process.platform = "darwin";
 

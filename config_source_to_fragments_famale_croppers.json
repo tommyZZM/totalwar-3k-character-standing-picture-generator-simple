@@ -1,12 +1,9 @@
 {
     "croppers": [
         ["composites_large_panel", {
-            "size": [832, 1701],
-            "maskUrl": "./assets-mask-default/mask_composites_large_panel_832x1701.png",
-            "maskLock": true,
-            "maskIsShow": false,
+            "size": [1600, 1500],
+            "maskUrl": "./assets-mask-default/mask_soft_edge_300x300.png",
             "maskPreview": true,
-            "maskIsEnable": true,
             "maskPosition": {
                 "width": 1,
                 "height": 1

@@ -1,15 +1,6 @@
 import React from "react";
-
-function getPixelRatio(context) {
-    var backingStore = context.backingStorePixelRatio ||
-          context.webkitBackingStorePixelRatio ||
-          context.mozBackingStorePixelRatio ||
-          context.msBackingStorePixelRatio ||
-          context.oBackingStorePixelRatio ||
-          context.backingStorePixelRatio || 1;
-
-    return (window.devicePixelRatio || 1) / backingStore;
-};
+import { virtualFileFromDataUrl } from "./SelectFile"
+import jimp from "jimp/dist"
 
 async function getImageLoaded(src) {
   if (!src) {
@@ -35,22 +26,46 @@ const SHARED_CANVAS_OUTPUT = document.createElement("canvas");
 const SHARED_CTX_CANVAS_OUTPUT = SHARED_CANVAS_OUTPUT.getContext("2d");
 // SHARED_CTX_CANVAS_OUTPUT.imageSmoothingEnabled = false;
 
+export async function getImageBufferFromDataUrl(dataUrl) {
+  const file = virtualFileFromDataUrl(dataUrl, 'image.png');
+  return Buffer.from(await file.readAsArrayBuffer());
+}
+
+export async function getImageBufferResized(src, width, height) {
+  return getImageBufferFromDataUrl(
+    await getImageResized(src, width, height)
+  );
+}
+
+async function _getImageResizedUsingBinary(dataUrl, width, height) {
+  const buffer = await getImageBufferFromDataUrl(dataUrl);
+
+  const imgHandle = await jimp.read(buffer);
+
+  await imgHandle.resize(width, height, jimp.RESIZE_BICUBIC);
+
+  return imgHandle.getBase64Async("image/png");
+}
+
 export async function getImageResized(src, width, height) {
   const sourceImg = await getImageLoaded(src);
+  const ratio = 2;
 
-  SHARED_CANVAS_OUTPUT.setAttribute("width", width);
-  SHARED_CANVAS_OUTPUT.setAttribute("height", height);
-  SHARED_CANVAS_OUTPUT.style.cssText = `background: transparent; width: ${width / 2}px; height: ${height / 2}`;
+  SHARED_CANVAS_OUTPUT.setAttribute("width", width * ratio);
+  SHARED_CANVAS_OUTPUT.setAttribute("height", height * ratio);
+  SHARED_CANVAS_OUTPUT.style.cssText = `background: transparent; width: ${width}px; height: ${height}px`;
 
   SHARED_CTX_CANVAS_OUTPUT.globalCompositeOperation = 'source-over';
-  SHARED_CTX_CANVAS_OUTPUT.clearRect(0, 0, width, height);
+  SHARED_CTX_CANVAS_OUTPUT.clearRect(0, 0, width * ratio, height * ratio);
   SHARED_CTX_CANVAS_OUTPUT.drawImage(
     sourceImg, 0, 0, 
-    width * getPixelRatio(SHARED_CTX_CANVAS_OUTPUT),
-    height * getPixelRatio(SHARED_CTX_CANVAS_OUTPUT),
+    width * ratio,
+    height * ratio,
   );
 
-  return SHARED_CANVAS_OUTPUT.toDataURL();
+  return _getImageResizedUsingBinary(
+    SHARED_CANVAS_OUTPUT.toDataURL(), width, height
+  );
 }
 
 async function drawComposites(options) {
@@ -63,7 +78,8 @@ async function drawComposites(options) {
     maskPositionToDraw,
     ctxMask,
     canvasMask,
-    ctx
+    ctx,
+    // ratio = 1
   } = options;
 
   const sourceImg = await getImageLoaded(sourceImageSrc);
@@ -76,7 +92,7 @@ async function drawComposites(options) {
 
     const [x, y, w, h] = maskPositionToDraw;
     const imageDataMask = ctxMask.getImageData(
-      x, y, w + 2, h + 2
+      x, y, w + 1, h + 1
     );
 
     // TODO: to alpha
@@ -98,28 +114,35 @@ async function drawComposites(options) {
     ctx.globalCompositeOperation = 'source-in';
   }
   const [xImage, yImage, wImage, hImage] = imagePositionToDraw;
-  ctx.drawImage(sourceImg, xImage, yImage, wImage * getPixelRatio(ctx), hImage * getPixelRatio(ctx));
+  ctx.drawImage(sourceImg, xImage, yImage, wImage, hImage);
   ctx.globalCompositeOperation = 'source-over';
 }
 
 export async function getImageCompositesBy(options) {
   const {
+    sizeCropper,
+  } = options;
+  const {
     canvasWidth,
     canvasHeight,
     imagePositionToDraw,
-    maskPositionToDraw
-  } = CanvasComposites.getDerivedStateFromProps(options, {});
+    maskPositionToDraw,
+  } = CanvasComposites.getDrawCompositesOptionsFromProps({
+    ...options,
+    ratio: 2 // draw double
+  });
 
   SHARED_CANVAS_MASK.setAttribute("width", canvasWidth);
   SHARED_CANVAS_MASK.setAttribute("height", canvasHeight);
-  SHARED_CANVAS_MASK.style.cssText = `background: transparent; width: ${canvasWidth / 2}px; height: ${canvasHeight / 2}`;
+  SHARED_CANVAS_MASK.style.cssText = `background: transparent; width: ${canvasWidth}px; height: ${canvasHeight}`;
 
   SHARED_CANVAS_OUTPUT.setAttribute("width", canvasWidth);
   SHARED_CANVAS_OUTPUT.setAttribute("height", canvasHeight);
-  SHARED_CANVAS_OUTPUT.style.cssText = `background: transparent; width: ${canvasWidth / 2}px; height: ${canvasHeight / 2}`;
+  SHARED_CANVAS_OUTPUT.style.cssText = `background: transparent; width: ${canvasWidth}px; height: ${canvasHeight}`;
 
   await drawComposites({
     ...options,
+    // ratio,
     canvasWidth,
     canvasHeight,
     imagePositionToDraw,
@@ -129,7 +152,9 @@ export async function getImageCompositesBy(options) {
     ctx: SHARED_CTX_CANVAS_OUTPUT
   });
 
-  return SHARED_CANVAS_OUTPUT.toDataURL();
+  return _getImageResizedUsingBinary(
+    SHARED_CANVAS_OUTPUT.toDataURL(), ...R.take(2, sizeCropper)
+  );
 }
 
 export default class CanvasComposites extends React.Component {
@@ -144,26 +169,39 @@ export default class CanvasComposites extends React.Component {
     this.ctx2dCanvasForMask = this.refCanvasForMask.current.getContext("2d");
     this._redrawCanvas();
   }
-  static getDerivedStateFromProps(props, state) {
+  static getDerivedStateFromProps(props) {
+    return CanvasComposites.getDrawCompositesOptionsFromProps(
+      props,
+      ({ positionCropper }) => [positionCropper.width, positionCropper.height]
+    );
+  }
+  static getDrawCompositesOptionsFromProps(props, getDrawSize = ({ sizeCropper }) => sizeCropper) {
     const {
       positionSourceImage,
       positionCropper,
-      positionPercentageCropperMask
+      positionPercentageCropperMask,
+      sizeCropper,
+      ratio = 1
     } = props;
+    const [widthCropper, heightCropper] = getDrawSize(props);
+    const widthRatioCropper = (widthCropper * ratio) / positionCropper.width;
+    const heightRatioCropper = (heightCropper * ratio) / positionCropper.height;
     return {
-      canvasWidth: positionCropper.width,
-      canvasHeight: positionCropper.height,
+      domWidth: positionCropper.width,
+      domHeight: positionCropper.height,
+      canvasWidth: widthCropper * ratio,
+      canvasHeight: heightCropper * ratio,
       imagePositionToDraw: [
-        positionSourceImage.x - positionCropper.x,
-        positionSourceImage.y - positionCropper.y,
-        positionSourceImage.width,
-        positionSourceImage.height
+        (positionSourceImage.x - positionCropper.x) * widthRatioCropper,
+        (positionSourceImage.y - positionCropper.y)  * heightRatioCropper,
+        positionSourceImage.width * widthRatioCropper,
+        positionSourceImage.height * heightRatioCropper
       ],
       maskPositionToDraw: [
-        positionCropper.width * positionPercentageCropperMask.xPercentage,
-        positionCropper.height * positionPercentageCropperMask.yPercentage,
-        positionCropper.width * positionPercentageCropperMask.widthPercentage,
-        positionCropper.height * positionPercentageCropperMask.heightPercentage,
+        widthCropper * ratio * positionPercentageCropperMask.xPercentage,
+        heightCropper * ratio * positionPercentageCropperMask.yPercentage,
+        widthCropper * ratio * positionPercentageCropperMask.widthPercentage,
+        heightCropper * ratio * positionPercentageCropperMask.heightPercentage,
       ]
     }
   }
@@ -209,6 +247,8 @@ export default class CanvasComposites extends React.Component {
     const {
       canvasWidth,
       canvasHeight,
+      domWidth,
+      domHeight,
     } = this.state;
 
     // const [ maskWidth, maskHeight ] = R.takeLast(2, maskPositionToDraw);
@@ -219,14 +259,14 @@ export default class CanvasComposites extends React.Component {
           ref={this.refCanvasForMask}
           width={canvasWidth}
           height={canvasHeight}
-          style={{ backgroundColor: "transparent" }}
+          style={{ backgroundColor: "transparent", width: domWidth, height: domHeight }}
         />
       </div>
       <canvas
         ref={this.refCanvas}
         width={canvasWidth}
         height={canvasHeight}
-        style={{ backgroundColor: "transparent" }}
+        style={{ backgroundColor: "transparent", width: domWidth, height: domHeight }}
       />
     </div>;
   }

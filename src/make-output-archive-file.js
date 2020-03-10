@@ -7,21 +7,14 @@ import vfs from "vinyl-fs"
 // import tar from "gulp-tar"
 import { zip } from "gulp-vinyl-zip"
 import streamToPromise from "stream-to-promise"
-import { virtualFileFromDataUrl } from "./components/SelectFile"
-import { getImageCompositesBy, getImageResized } from "./components/CanvasComposites"
+import { getImageCompositesBy, getImageBufferResized, getImageBufferFromDataUrl } from "./components/CanvasComposites"
 import { templateStringDoubleBraces } from "./utils/template-string-braces"
 import path from "path"
 import fs from "fs"
 import rmfr from "rmfr"
 import through2 from "through2";
-import getImageSize from "./utils/get-image-size";
+// import getImageSize from "./utils/get-image-size";
 import pngMetaData from "png-metadata";
-
-async function getImageBuffer(src, width, height) {
-  const dataUrl = await getImageResized(src, width, height);
-  const file = virtualFileFromDataUrl(dataUrl, 'image.png');
-  return Buffer.from(await file.readAsArrayBuffer());
-}
 
 export default async function (options) {
   const {
@@ -72,10 +65,7 @@ export default async function (options) {
 
   fs.writeFileSync(
     `./${workDir}/${file_name}.png`,
-    await getImageBuffer(
-      currentImageDataUrlReadOnly,
-      ...await getImageSize(currentImageDataUrlReadOnly)
-    )
+    await getImageBufferFromDataUrl(currentImageDataUrlReadOnly)
   );
 
   await mkdirp(path.join(workDir, `${file_name}_src`));
@@ -93,6 +83,7 @@ export default async function (options) {
       positionSourceImage,
       positionCropper,
       positionPercentageCropperMask,
+      sizeCropper: sourceCropRef.size,
       sourceImageSrc: currentImageDataUrlReadOnly,
       cropperMaskSrc: sourceCropRef.maskIsEnable ? sourceCropRef.maskUrl : null,
     });
@@ -101,18 +92,19 @@ export default async function (options) {
     mappingSourceKeyToSourcePath[sourceKey] = fileNameFull;
     fs.writeFileSync(
       fileNameFull, 
-      await getImageBuffer(imageDataUrl, ...sourceCropRef.size)
+      await getImageBufferFromDataUrl(imageDataUrl)
     );
 
-    if (sourceCropRef.copy && Array.isArray(sourceCropRef.copy) && !R.isEmpty(sourceCropRef.copy)) {
-      const [toCopy] = sourceCropRef.copy;
-      const { key: keyToCopy, size: sizeToCopy } = toCopy;
-      const fileNameFullToCopy = `${workDir}/${file_name}_src/${file_name}_${keyToCopy}.png`;
-      mappingSourceKeyToSourcePath[keyToCopy] = fileNameFullToCopy;
-      fs.writeFileSync(
-        fileNameFullToCopy,
-        await getImageBuffer(imageDataUrl, ...sizeToCopy)
-      );
+    if (Array.isArray(sourceCropRef.copy) && !R.isEmpty(sourceCropRef.copy)) {
+      for (const toCopy of sourceCropRef.copy) {
+        const { key: keyToCopy, size: sizeToCopy } = toCopy;
+        const fileNameFullToCopy = `${workDir}/${file_name}_src/${file_name}_${keyToCopy}.png`;
+        mappingSourceKeyToSourcePath[keyToCopy] = fileNameFullToCopy;
+        fs.writeFileSync(
+          fileNameFullToCopy,
+          await getImageBufferResized(imageDataUrl, ...sizeToCopy)
+        );
+      }
     }
   }
 
@@ -144,7 +136,7 @@ export default async function (options) {
         return pngMetaData.createChunk(type, data)
       });
       metaChunksFiltered = R.insertAll(indexOfIHDR + 1, newChunks, metaChunksFiltered);
-      console.info('patched png meta', destPath, metaChunksFiltered);
+      // console.info('patched png meta', destPath, metaChunksFiltered);
       var destBuffer = pngMetaData.joinChunk(metaChunksFiltered);
       fs.writeFileSync(destPath, destBuffer, 'binary');
     } else {
