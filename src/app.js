@@ -278,7 +278,7 @@ export default class extends React.Component {
         ...R.pick(['x', 'y'], imagePosition),
         ...isResetSize && R.pick(['width', 'height'], imagePosition)
       },
-      mappingCurrentCropperMaskPositionsDefault: configCroppers.reduce((result, [key, ref]) => {
+      mappingCurrentCropperMaskPositionsDefault: configCroppersDefault.reduce((result, [key, ref]) => {
         return {
           ...result,
           [key]: {
