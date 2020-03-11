@@ -512,7 +512,7 @@ export default class extends React.Component {
                   fileList={[]}
                   beforeUpload={async (file) => {
                     const vf = new VirtualFile(file);
-                    if (vf.type === 'image/png' || vf.type === 'image/jpg') {
+                    if (vf.type === 'image/png' || vf.type === 'image/jpeg') {
                       await this._handleUpdateFile(vf);
                        message.success('图片已读取');
                     } else if (vf.type === 'application/zip') {
@@ -693,12 +693,12 @@ export default class extends React.Component {
             </div>
             <div style={{ marginBottom: 10 }}>
               <SelectFile
-                accept={'application/json,application/zip,image/png,image/jpg'}
+                accept={'application/json,application/zip,image/png,image/jpeg'}
                 onSelectFilesWithError={() => message.error('所选文件格式不正确, 选择png图片、zip或者json')}
                 onSelectFiles={async ({ virtualFiles }) => {
                   const [vf] = virtualFiles;
                   const jsonString = await vf.readAsText();
-                  if (vf.type === 'image/png' || vf.type === 'image/jpg') {
+                  if (vf.type === 'image/png' || vf.type === 'image/jpeg') {
                     const [vf] = virtualFiles;
                     await this._handleUpdateFile(vf);
                     message.success('图片已读取');
