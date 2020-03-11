@@ -431,9 +431,9 @@ export default class extends React.Component {
       for (const [key, value] of R.toPairs(pathParams)) {
         sessionStorage.setItem(pathParamsStorageKey(key), value);
       }
-      message.success(`读取数据完成`);
+      message.success(`数据包读取完成`);
     } catch (error) {
-      message.error(`读取数据遇到异常: ${error.message}`);
+      message.error(`数据包读取遇到异常: ${error.message}`);
     } finally {
       this.setState({ isFilePicking: false });
     }
@@ -512,12 +512,13 @@ export default class extends React.Component {
                   fileList={[]}
                   beforeUpload={async (file) => {
                     const vf = new VirtualFile(file);
-                    if (vf.type.startsWith('image/')) {
+                    if (vf.type === 'image/png' || vf.type === 'image/jpg') {
                       await this._handleUpdateFile(vf);
+                       message.success('图片已读取');
                     } else if (vf.type === 'application/zip') {
                       await this._applyConfigFromArchiveFile(vf);
                     } else {
-                      message.error('所选文件格式不正确')
+                      message.error('所选文件格式不正确, 选择png图片、或者json')
                     }
                   }}
                   showUploadList={false}
@@ -686,32 +687,22 @@ export default class extends React.Component {
                 defaultValue={`${this.state.currentSelectConfigValue}`}
                 onChange={value => this._reloadConfig(value, false)}
               >
-                <Option value={'0'}>TotalWar:ThreeKingDom(传奇武将)</Option>
-                <Option value={'1'}>TotalWar:ThreeKingDom(大众脸武将)</Option>
+                <Option value={'0'}>TotalWar:ThreeKingdoms(传奇武将)</Option>
+                <Option value={'1'}>TotalWar:ThreeKingdoms(大众脸武将)</Option>
               </Select>
             </div>
             <div style={{ marginBottom: 10 }}>
-              <SelectFile accept={"image/*"}
-                onSelectFilesWithError={() => message.error('仅支持图片文件')}
-                onSelectFiles={async ({ virtualFiles }) => {
-                  const [vf] = virtualFiles;
-                  await this._handleUpdateFile(vf);
-                }}
-              >
-                <Button type={"primary"}>
-                  <PlusCircleOutlined />
-                  <span>{currentImageDataUrlReadOnly ? "选择新" : "选择"}图片</span>
-                </Button>
-              </SelectFile>
-            </div>
-            <div style={{ marginBottom: 10 }}>
               <SelectFile
-                accept={'application/json,application/zip'}
-                onSelectFilesWithError={() => message.error('所选文件格式不正确, 导入已导出的zip或者json')}
+                accept={'application/json,application/zip,image/png,image/jpg'}
+                onSelectFilesWithError={() => message.error('所选文件格式不正确, 选择png图片、zip或者json')}
                 onSelectFiles={async ({ virtualFiles }) => {
                   const [vf] = virtualFiles;
                   const jsonString = await vf.readAsText();
-                  if (vf.type === 'application/json') {
+                  if (vf.type === 'image/png' || vf.type === 'image/jpg') {
+                    const [vf] = virtualFiles;
+                    await this._handleUpdateFile(vf);
+                    message.success('图片已读取');
+                  } else if (vf.type === 'application/json') {
                     this._applyConfigWithCroppers(JSON.parse(jsonString), false);
                     message.success('剪裁配置已读取');
                   } else if (vf.type === 'application/zip') {
@@ -719,7 +710,7 @@ export default class extends React.Component {
                   }
                 }}
               >
-                <Button>导入...</Button>
+                <Button type={'primary'}>导入...</Button>
               </SelectFile>
               <Button
                 style={{ marginLeft: 10 }}

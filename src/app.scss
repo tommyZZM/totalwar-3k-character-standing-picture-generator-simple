@@ -1,7 +1,43 @@
 @import "../node_modules/github-fork-ribbon-css/gh-fork-ribbon.css";
 
+$tada-min: 0.99;
+$tada-max: 1.01;
+$tada-rotate: .2deg;
+
+@keyframes tada {
+  0% {
+    transform: scale3d(1, 1, 1)
+  }
+
+  10%,20% {
+    transform: scale3d($tada-min,$tada-min,$tada-min) rotate3d(0, 0, 1, -$tada-rotate)
+  }
+
+  30%,50%,70%,90% {
+    transform: scale3d($tada-max,$tada-max,$tada-max) rotate3d(0, 0, 1, $tada-rotate)
+  }
+
+  40%,60%,80% {
+    transform: scale3d($tada-max,$tada-max,$tada-max) rotate3d(0, 0, 1, -$tada-rotate)
+  }
+
+  to {
+    transform: scale3d(1, 1, 1)
+  }
+}
+
 .github-fork-ribbon:before {
   background-color: #333;
+}
+
+.github-fork-ribbon {
+  animation-iteration-count: infinite;
+  animation-duration: 1s;
+  animation-fill-mode: both;
+  animation-name: tada;
+  transform-origin: 100% 0%;
+  top: -6px;
+  right: -6px;
 }
 
 html,
