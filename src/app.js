@@ -56,6 +56,10 @@ const reactRndEnableResizing = boo => ({
   topRightboo: boo
 })
 
+const checkValidFilledParams = (key, value) => {
+  return (REGEX_VAILD_FILENAME().test(value) || (value === '/' && key !== 'file_name'))
+}
+
 class OutputModalContent extends React.Component {
   constructor(props) {
     super(props);
@@ -85,8 +89,8 @@ class OutputModalContent extends React.Component {
     }, () => {
       // const { outPutName } = this.state;
 
-      const isValidFilledParams = R.values(filledParams).filter(value => {
-        return value && REGEX_VAILD_FILENAME().test(value);
+      const isValidFilledParams = R.toPairs(filledParams).filter(([key, value]) => {
+        return checkValidFilledParams(key, value);
       }).length === R.keys(filledParams).length;
 
       // const isValidOutputName = !outPutName || REGEX_VAILD_FILENAME().test(outPutName);
@@ -112,7 +116,9 @@ class OutputModalContent extends React.Component {
     const isHasError = R.values(filledParamsError).some(Boolean);
 
     return <div>
-      <div>ui/characters/<b>{`{{type}}`}</b>/<b>{`{{gender}}`}</b>/.../<b>{`{{file_name}}`}.png</b></div>
+      <Tooltip title={'如需要变量置空, 填`/`即可, file_name不可置空'}>
+        <div>ui/characters/<b>{`{{type}}`}</b>/<b>{`{{gender}}`}</b>/.../<b>{`{{file_name}}`}.png</b></div>
+      </Tooltip>
       {R.keys(filledParams).map((key, index) => {
         const keyName = key;
         if (key === 'output_name') {
@@ -124,7 +130,7 @@ class OutputModalContent extends React.Component {
             className={`modal-input has-error-${filledParamsError[key]}`}
             onChange={(e) => {
               const value = e.target.value;
-              const isValidValue = REGEX_VAILD_FILENAME().test(value);
+              const isValidValue = checkValidFilledParams(key, value);
 
               sessionStorage.setItem(pathParamsStorageKey(key), value);
 
