@@ -1,17 +1,17 @@
 [
-    ["composites_large_panel", "ui/characters/{{type}}/composites/large_panel/angry/face.png", {
+    ["composites_large_panel", "ui/characters/{{type}}/composites/large_panel/angry/angry.png", {
         "pngMeta": [{
             "type": "tEXt",
             "data": "Comment\u0000[type:happy;x:0;y:0;z-order:0;pivot_x:0.5;pivot_y:0.5;]"
         }]
     }],
-    ["composites_large_panel", "ui/characters/{{type}}/composites/large_panel/happy/face.png", {
+    ["composites_large_panel", "ui/characters/{{type}}/composites/large_panel/happy/happy.png", {
         "pngMeta": [{
             "type": "tEXt",
             "data": "Comment\u0000[type:happy;x:0;y:0;z-order:0;pivot_x:0.5;pivot_y:0.5;]"
         }]
     }],
-    ["composites_large_panel", "ui/characters/{{type}}/composites/large_panel/norm/face.png", {
+    ["composites_large_panel", "ui/characters/{{type}}/composites/large_panel/norm/norm.png", {
         "pngMeta": [{
             "type": "tEXt",
             "data": "Comment\u0000[type:happy;x:0;y:0;z-order:0;pivot_x:0.5;pivot_y:0.5;]"
