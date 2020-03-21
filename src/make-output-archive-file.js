@@ -130,12 +130,12 @@ export default async function (options) {
         if (item.type && R.isNil(indexOfIHDR)) {
           indexOfIHDR = index;
         }
-        return item.type === 'IHDR' || item.type === 'IDAT'
+        return item.type === 'IHDR' || item.type === 'IDAT' || item.type === 'IEND'
       });
       const newChunks = destOptions.pngMeta.map(({ type, data }) => {
         return pngMetaData.createChunk(type, data)
       });
-      metaChunksFiltered = R.insertAll(indexOfIHDR + 1, newChunks, metaChunksFiltered);
+      metaChunksFiltered = R.insertAll(1, newChunks, metaChunksFiltered);
       // console.info('patched png meta', destPath, metaChunksFiltered);
       var destBuffer = pngMetaData.joinChunk(metaChunksFiltered);
       fs.writeFileSync(destPath, destBuffer, 'binary');
