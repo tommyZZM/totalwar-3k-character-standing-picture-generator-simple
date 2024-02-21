@@ -18,13 +18,13 @@
         }]
     }],
     ["stills_bobbleheads_faces", "ui/characters/{{type}}/stills/bobbleheads/{{file_name}}.png"],
-    ["stills_bobbleheads_faces", "ui/characters/{{type}}/stills/bobbleheads/large/{{file_name}}.png"],
+    ["stills_bobbleheads_faces_large", "ui/characters/{{type}}/stills/bobbleheads/large/{{file_name}}.png"],
     ["stills_halfbody_large_faces", "ui/characters/{{type}}/stills/halfbody_large/{{file_name}}.png"],
-    ["stills_halfbody_large_faces", "ui/characters/{{type}}/stills/halfbody_large/large/{{file_name}}.png"],
-    ["stills_halfbody_large_faces", "ui/characters/{{type}}/stills/halfbody_small/{{file_name}}.png"],
-    ["stills_halfbody_large_faces", "ui/characters/{{type}}/stills/halfbody_small/large/{{file_name}}.png"],
+    ["stills_halfbody_large_faces_large", "ui/characters/{{type}}/stills/halfbody_large/large/{{file_name}}.png"],
+    ["stills_halfbody_small_faces", "ui/characters/{{type}}/stills/halfbody_small/{{file_name}}.png"],
+    ["stills_halfbody_small_faces_large", "ui/characters/{{type}}/stills/halfbody_small/large/{{file_name}}.png"],
     ["stills_mini_faces", "ui/characters/{{type}}/stills/mini/{{file_name}}.png"],
-    ["stills_mini_faces", "ui/characters/{{type}}/stills/mini/large/{{file_name}}.png"],
+    ["stills_mini_faces_large", "ui/characters/{{type}}/stills/mini/large/{{file_name}}.png"],
     ["stills_unitcards_faces", "ui/characters/{{type}}/stills/unitcards/{{file_name}}.png"],
-    ["stills_unitcards_faces", "ui/characters/{{type}}/stills/unitcards/large/{{file_name}}.png"]
+    ["stills_unitcards_faces_large", "ui/characters/{{type}}/stills/unitcards/large/{{file_name}}.png"]
 ]
