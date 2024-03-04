@@ -10,7 +10,8 @@ import sourcemaps from "gulp-sourcemaps";
 import log from "fancy-log";
 import alias from "awesome-aliasify";
 // const gutil = require("gulp-util");
-import sass from "gulp-sass";
+import gulpSass from "gulp-sass";
+import sass from "node-sass";
 import postcss from "gulp-postcss";
 import autoprefixer from "autoprefixer";
 import cleanCSS from "gulp-clean-css";
@@ -24,10 +25,11 @@ import commonShake from "common-shakeify";
 
 // create `build:app-css`
 gulp.task("build:css", _ => {
+  const pipeSass = gulpSass(sass)
   return gulp.src([`./src/app.scss`], {
       allowEmpty: true
   })
-    .pipe(sass().on('error', sass.logError))
+    .pipe(pipeSass().on('error', pipeSass.logError))
     .pipe(postcss([autoprefixer()]))
     .pipe(cleanCSS())
     .pipe(gulp.dest('./dist/'))

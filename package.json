@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "gulp": "node -r esm ./node_modules/gulp/bin/gulp.js",
+    "gulp": "gulp",
     "build-before-push": "cross-env IS_BEFORE_PUSH=1 npm run gulp -- build && npm run gulp -- build:css && git add -A",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -36,11 +36,12 @@
     "gulp": "^4.0.2",
     "gulp-clean-css": "^4.2.0",
     "gulp-postcss": "^8.0.0",
-    "gulp-sass": "^4.0.2",
+    "gulp-sass": "^5.1.0",
     "gulp-sourcemaps": "^2.6.5",
     "gulp-terser": "^1.2.0",
     "lodash.debounce": "^4.0.8",
     "mocha": "^7.1.0",
+    "node-sass": "^9.0.0",
     "pre-commit": "^1.2.2",
     "vinyl-buffer": "^1.0.1",
     "vinyl-source-stream": "^2.0.0",
