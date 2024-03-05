@@ -69,7 +69,7 @@
         }],
         ["stills_unitcards_faces_large", {
             "size": [131, 435],
-            "maskUrl": "./assets-mask-default/mask_unitcard_202403.png",
+            "maskUrl": "./assets-mask-default/mask_unitcard_202403_large.png",
             "maskLock": true,
             "maskIsShow": false,
             "maskPreview": true,
