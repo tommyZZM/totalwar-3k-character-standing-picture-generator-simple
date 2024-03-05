@@ -57,7 +57,7 @@
         }],
         ["stills_unitcards_faces", {
             "size": [82, 272],
-            "maskUrl": "./assets-mask-default/mask_soft_edge_300x300.png",
+            "maskUrl": "./assets-mask-default/mask_unitcard_202403.png",
             "maskLock": true,
             "maskIsShow": false,
             "maskPreview": true,
@@ -69,7 +69,7 @@
         }],
         ["stills_unitcards_faces_large", {
             "size": [131, 435],
-            "maskUrl": "./assets-mask-default/mask_soft_edge_300x300.png",
+            "maskUrl": "./assets-mask-default/mask_unitcard_202403.png",
             "maskLock": true,
             "maskIsShow": false,
             "maskPreview": true,
