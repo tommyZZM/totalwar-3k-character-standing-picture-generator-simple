@@ -18,7 +18,7 @@
         }]
     }],
     ["stills_bobbleheads_faces", "ui/characters/{{type}}/stills/bobbleheads/{{file_name}}.png"],
-    ["stills_bobbleheads_faces", "ui/characters/{{type}}/stills/bobbleheads/large/{{file_name}}.png"],
+    ["stills_bobbleheads_faces_large", "ui/characters/{{type}}/stills/bobbleheads/large/{{file_name}}.png"],
     ["stills_halfbody_large_faces", "ui/characters/{{type}}/stills/halfbody_large/{{file_name}}.png"],
     ["stills_halfbody_large_faces_large", "ui/characters/{{type}}/stills/halfbody_large/large/{{file_name}}.png"],
     ["stills_halfbody_small_faces", "ui/characters/{{type}}/stills/halfbody_small/{{file_name}}.png"],
